@@ -17,6 +17,15 @@ limiter: Limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 
 
+def get_strike_service(request: Request) -> StrikeService:
+    """Retrieve the configured StrikeService from the application state."""
+
+    service = getattr(request.app.state, "strike_service", None)
+    if not isinstance(service, StrikeService):  # pragma: no cover - defensive guard
+        raise RuntimeError("Strike service not initialised")
+    return service
+
+
 @router.get("/inputs")
 @limiter.limit("120/minute")
 def list_inputs(request: Request, user=Depends(get_authenticated_user)) -> dict:  # noqa: ARG001
@@ -68,7 +77,7 @@ def set_manual_mode(
 def trigger_strike(
     request: Request,
     strike_id: str,
-    service: StrikeService = Depends(),
+    service: StrikeService = Depends(get_strike_service),
     user=Depends(require_role("operator")),
 ):  # noqa: ARG001
     success = service.trigger(strike_id)
