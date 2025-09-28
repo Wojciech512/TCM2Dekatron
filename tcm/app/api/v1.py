@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -19,21 +19,25 @@ router = APIRouter(prefix="/api/v1", tags=["v1"])
 
 @router.get("/inputs")
 @limiter.limit("120/minute")
-def list_inputs(user=Depends(get_authenticated_user)) -> dict:
+def list_inputs(request: Request, user=Depends(get_authenticated_user)) -> dict:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return runtime.inputs
 
 
 @router.get("/outputs")
 @limiter.limit("120/minute")
-def list_outputs(user=Depends(get_authenticated_user)) -> dict:
+def list_outputs(request: Request, user=Depends(get_authenticated_user)) -> dict:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return runtime.outputs
 
 
 @router.post("/outputs")
 @limiter.limit("30/minute")
-def set_output(payload: OutputUpdateModel, user=Depends(require_role("technik"))) -> dict:
+def set_output(
+    request: Request,
+    payload: OutputUpdateModel,
+    user=Depends(require_role("technik")),
+) -> dict:  # noqa: ARG001
     state = GLOBAL_STATE.read()
     overrides = dict(state.manual_overrides)
     overrides[payload.name] = payload.state
@@ -43,21 +47,30 @@ def set_output(payload: OutputUpdateModel, user=Depends(require_role("technik"))
 
 @router.get("/sensors")
 @limiter.limit("120/minute")
-def get_sensors(user=Depends(get_authenticated_user)) -> SensorModel:
+def get_sensors(request: Request, user=Depends(get_authenticated_user)) -> SensorModel:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return SensorModel(**runtime.sensors.__dict__)
 
 
 @router.post("/manual-mode")
 @limiter.limit("30/minute")
-def set_manual_mode(payload: ManualModeModel, user=Depends(require_role("technik"))):
+def set_manual_mode(
+    request: Request,
+    payload: ManualModeModel,
+    user=Depends(require_role("technik")),
+):  # noqa: ARG001
     GLOBAL_STATE.update(manual_mode=payload.enabled)
     return {"manual_mode": payload.enabled}
 
 
 @router.get("/strike/{strike_id}/trigger", response_model=StrikeTriggerResponse)
 @limiter.limit("10/hour")
-def trigger_strike(strike_id: str, service: StrikeService = Depends(), user=Depends(require_role("operator"))):
+def trigger_strike(
+    request: Request,
+    strike_id: str,
+    service: StrikeService = Depends(),
+    user=Depends(require_role("operator")),
+):  # noqa: ARG001
     success = service.trigger(strike_id)
     if not success:
         raise HTTPException(status_code=404, detail="Strike not configured")
