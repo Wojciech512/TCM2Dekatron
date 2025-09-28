@@ -2,13 +2,20 @@
 
 ```
 tcm/app/
-  api/          # Routery FastAPI (state, inputs, outputs, sensors, strike, ui)
-  core/         # Warstwa sprzętowa i pętla sterująca
+  api/          # Routery FastAPI (state, v1 endpoints)
+  core/         # Warstwa sprzętowa, konfiguracja i pętla sterująca
   security/     # Autoryzacja, sesje, CSRF, role
-  services/     # Dostęp do bazy, konfiguracji, logów, strike
-  templates/    # Szablony Jinja2
-  static/       # Zasoby front-end (CSS/JS)
+  services/     # Rejestr zdarzeń, użytkownicy, strike
+  templates/    # Szablony Jinja2 (dashboard + panele)
+  static/       # Zasoby front-end (CSS)
   main.py       # Fabryka aplikacji + rejestracja background tasków
 ```
 
-Moduły `api`, `core`, `security` i `services` korzystają z `ConfigService`, który scala konfigurację YAML + secrets. Zadania w tle rejestrują się w `startup` i kończą w `shutdown` z wykorzystaniem flag `asyncio.Event`.
+`main.py` ładuje konfigurację YAML (`tcm/config/app.yaml`), sekrety z Docker secrets lub zmiennych środowisk i przygotowuje:
+
+* `HardwareInterface` obsługujący MCP23S17 (z symulacją gdy brak bibliotek RPi),
+* `ControlLoop` uruchamiany jako background task (pętle: szybka i logiki),
+* serwisy `EventLogger`, `UserStore` (SQLite) oraz `StrikeService` (sterowanie elektrozaczepami),
+* warstwę webową (sesje, CSRF, szablony, rate limiting via SlowAPI).
+
+Panele Operator/Technik/Serwis renderowane są z danych runtime (`GLOBAL_STATE`) i konfiguracji.

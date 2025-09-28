@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section>
+    <h2>Wejścia</h2>
+    <table>
+        <tr><th>Kanał</th><th>Stan</th></tr>
+        {% for channel, value in state.inputs.items() %}
+        <tr>
+            <td>{{ channel }}</td>
+            <td class="{{ 'on' if value else 'off' }}">{{ 'AKTYWNE' if value else 'spokojnie' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</section>
+
+<section>
+    <h2>Wyjścia logiczne</h2>
+    <table>
+        <tr><th>Nazwa</th><th>Stan</th></tr>
+        {% for name, value in state.outputs.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td class="{{ 'on' if value else 'off' }}">{{ 'ON' if value else 'OFF' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</section>
+
+<section>
+    <h2>Czujniki</h2>
+    <ul>
+        <li>Bateria: {{ state.sensors.temp_batt }} °C / {{ state.sensors.hum_batt }} %</li>
+        <li>Szafa: {{ state.sensors.temp_cab }} °C / {{ state.sensors.hum_cab }} %</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Status alarmu</h2>
+    <p>Powód: {{ state.alarm_reason or 'brak' }}</p>
+    <p>Strike aktywny do: {{ state.strike_active_until or 'nieaktywny' }}</p>
+</section>
+{% endblock %}

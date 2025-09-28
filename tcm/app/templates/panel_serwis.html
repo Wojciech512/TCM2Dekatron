@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Panel Serwisowy{% endblock %}
+{% block content %}
+<section>
+    <h2>Mapowanie wyjść</h2>
+    <table>
+        <tr><th>Logiczne</th><th>Przekaźniki</th></tr>
+        {% for name, pins in config.outputs.relays.map.items() %}
+        <tr><td>{{ name }}</td><td>{{ pins|join(', ') }}</td></tr>
+        {% endfor %}
+    </table>
+    <table>
+        <tr><th>Logiczne</th><th>Tranzystory</th></tr>
+        {% for name, pins in config.outputs.transistors.map.items() %}
+        <tr><td>{{ name }}</td><td>{{ pins|join(', ') }}</td></tr>
+        {% endfor %}
+    </table>
+</section>
+
+<section>
+    <h2>Diagnostyka wejść</h2>
+    <p>Wejścia surowe: {{ state.inputs }}</p>
+</section>
+
+<section>
+    <h2>Strike</h2>
+    <ul>
+        {% for strike_id, strike in config.strike.assignments.items() %}
+            <li>{{ strike_id }} → {{ strike.transistor or 'brak' }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

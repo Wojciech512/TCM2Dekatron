@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Logowanie{% endblock %}
+{% block content %}
+<section class="login">
+    <h2>Zaloguj się</h2>
+    <form method="post" action="/login">
+        <label>Użytkownik
+            <input type="text" name="username" required autofocus>
+        </label>
+        <label>Hasło
+            <input type="password" name="password" required>
+        </label>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit">Zaloguj</button>
+    </form>
+</section>
+{% endblock %}
