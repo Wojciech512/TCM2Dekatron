@@ -87,7 +87,6 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     app.state.templates = templates
     limiter = v1_router.limiter
     app.state.limiter = limiter
-    app.dependency_overrides[StrikeService] = lambda: strike_service
 
     app.include_router(state_router.router)
     app.include_router(v1_router.router)
