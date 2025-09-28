@@ -2,3 +2,5 @@
 *.iml
 *.iws
 *.ipr
+__pycache__/
+*.py[cod]
