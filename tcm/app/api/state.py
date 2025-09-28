@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["state"])
 
 @router.get("/state", response_model=RuntimeStateModel)
 @limiter.limit("60/minute")
-def get_state(user=Depends(get_authenticated_user)) -> RuntimeStateModel:
+def get_state(request: Request, user=Depends(get_authenticated_user)) -> RuntimeStateModel:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return RuntimeStateModel(
         inputs=runtime.inputs,
