@@ -22,7 +22,7 @@ openssl req -new -key "${WORKDIR}/intermediate/intermediate.key.pem" \
 openssl x509 -req -in "${WORKDIR}/intermediate/intermediate.csr.pem" \
     -CA "${WORKDIR}/root-ca/root.crt.pem" -CAkey "${WORKDIR}/root-ca/root.key.pem" \
     -CAcreateserial -out "${WORKDIR}/intermediate/intermediate.crt.pem" \
-    -days 1825 -sha384 -extfile <(printf "basicConstraints=CA:TRUE\nkeyUsage=digitalSignature,keyCertSign,crlSign")
+    -days 1825 -sha384 -extfile <(printf "basicConstraints=CA:TRUE\nkeyUsage=digitalSignature,keyCertSign,cRLSign")
 
 cat "${WORKDIR}/intermediate/intermediate.crt.pem" "${WORKDIR}/root-ca/root.crt.pem" > "${OUTPUT}/ca-chain.crt"
 cp "${OUTPUT}/ca-chain.crt" "${WORKDIR}/ca-clients.crt"
@@ -36,29 +36,49 @@ openssl x509 -req -in "${OUTPUT}/server.csr.pem" \
     -CAcreateserial -out "${OUTPUT}/server.crt.pem" -days 825 -sha384 \
     -extfile <(printf "subjectAltName=DNS:tcm.local,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth")
 
-# 4. Klienci
+# 4. Klienci  (zmiany: bez -clcerts, poprawne ścieżki tar)
 for role in Operator Technik Serwis; do
-    lower=$(echo "$role" | tr '[:upper:]' '[:lower:]')
-    openssl genrsa -out "${WORKDIR}/clients/${lower}.key.pem" 4096
-    openssl req -new -key "${WORKDIR}/clients/${lower}.key.pem" \
-        -out "${WORKDIR}/clients/${lower}.csr.pem" \
-        -subj "/C=PL/O=TCM Users/OU=${role}/CN=${role} Client"
-    openssl x509 -req -in "${WORKDIR}/clients/${lower}.csr.pem" \
-        -CA "${WORKDIR}/intermediate/intermediate.crt.pem" -CAkey "${WORKDIR}/intermediate/intermediate.key.pem" \
-        -CAcreateserial -out "${WORKDIR}/clients/${lower}.crt.pem" -days 730 -sha384 \
-        -extfile <(printf "extendedKeyUsage=clientAuth\nsubjectAltName=DNS:${lower}.local")
-    cat "${WORKDIR}/clients/${lower}.crt.pem" "${OUTPUT}/ca-chain.crt" > "${WORKDIR}/clients/${lower}-fullchain.pem"
-    openssl pkcs12 -export -clcerts -in "${WORKDIR}/clients/${lower}-fullchain.pem" \
-        -inkey "${WORKDIR}/clients/${lower}.key.pem" \
-        -out "${OUTPUT}/${lower}.p12" -passout pass:changeme
-    tar -czf "${OUTPUT}/client-${lower}.tar.gz" -C "${WORKDIR}/clients" \
-        "${lower}.key.pem" "${WORKDIR}/clients/${lower}-fullchain.pem" "${OUTPUT}/${lower}.p12"
-    rm "${OUTPUT}/${lower}.p12"
+  lower=$(echo "$role" | tr '[:upper:]' '[:lower:]')
+  openssl genrsa -out "${WORKDIR}/clients/${lower}.key.pem" 4096
+  openssl req -new -key "${WORKDIR}/clients/${lower}.key.pem" \
+      -out "${WORKDIR}/clients/${lower}.csr.pem" \
+      -subj "/C=PL/O=TCM Users/OU=${role}/CN=${role} Client"
+  openssl x509 -req -in "${WORKDIR}/clients/${lower}.csr.pem" \
+      -CA "${WORKDIR}/intermediate/intermediate.crt.pem" -CAkey "${WORKDIR}/intermediate/intermediate.key.pem" \
+      -CAcreateserial -out "${WORKDIR}/clients/${lower}.crt.pem" -days 730 -sha384 \
+      -extfile <(printf "extendedKeyUsage=clientAuth\nsubjectAltName=DNS:${lower}.local")
+  cat "${WORKDIR}/clients/${lower}.crt.pem" "${OUTPUT}/ca-chain.crt" > "${WORKDIR}/clients/${lower}-fullchain.pem"
+  openssl pkcs12 -export -in "${WORKDIR}/clients/${lower}-fullchain.pem" \
+      -inkey "${WORKDIR}/clients/${lower}.key.pem" -out "${OUTPUT}/${lower}.p12" -passout pass:changeme
+  tar -czf "${OUTPUT}/client-${lower}.tar.gz" \
+      -C "${WORKDIR}/clients" "${lower}.key.pem" "${lower}-fullchain.pem" \
+      -C "${OUTPUT}" "${lower}.p12"
+  rm "${OUTPUT}/${lower}.p12"
 done
 
-# 5. CRL początkowa
-openssl ca -gencrl -keyfile "${WORKDIR}/intermediate/intermediate.key.pem" \
-    -cert "${WORKDIR}/intermediate/intermediate.crt.pem" -out "${OUTPUT}/crl.pem" \
-    -crldays 30 -config <(printf "[ ca ]\ndefault_ca = ca_intermediate\n[ ca_intermediate ]\ndefault_crl_days=30\nprivate_key=${WORKDIR}/intermediate/intermediate.key.pem\ncertificate=${WORKDIR}/intermediate/intermediate.crt.pem")
+# 5. CRL (nowa, kompletna konfiguracja dla openssl ca)
+# wymagane pliki bazy CA
+: > "${WORKDIR}/intermediate/index.txt"
+echo 1000 > "${WORKDIR}/intermediate/serial"
+echo 1000 > "${WORKDIR}/intermediate/crlnumber"
 
-echo "Artefakty CA zapisano w ${OUTPUT}. Pamiętaj o zabezpieczeniu kluczy prywatnych."
+cat > "${WORKDIR}/intermediate/openssl.cnf" <<EOF
+[ ca ]
+default_ca = ca_intermediate
+
+[ ca_intermediate ]
+dir = ${WORKDIR}/intermediate
+database = \$dir/index.txt
+serial = \$dir/serial
+crlnumber = \$dir/crlnumber
+default_crl_days = 30
+default_md = sha384
+private_key = ${WORKDIR}/intermediate/intermediate.key.pem
+certificate = ${WORKDIR}/intermediate/intermediate.crt.pem
+
+[ policy_loose ]
+commonName = supplied
+EOF
+
+openssl ca -gencrl -config "${WORKDIR}/intermediate/openssl.cnf" -out "${OUTPUT}/crl.pem"
+

@@ -8,7 +8,8 @@ Repozytorium zawiera kompletną implementację aplikacji TCM 2.0 w FastAPI z Jin
 * `tcm/compose.yaml` – definicja stosu Docker Compose (aplikacja + reverse proxy).
 * `tcm/docker/*.Dockerfile` – obrazy aplikacji i reverse proxy.
 * `tcm/deploy/ca/README.md` – procedura CA i mTLS.
-* `tcm/scripts/*.sh` – generowanie CA i instalacja systemd.
+* `tcm/scripts/*.sh` – 
+* CA i instalacja systemd.
 
 ## Uruchomienie lokalne (tryb developerski)
 1. Zainstaluj zależności: `pip install -r requirements.txt`.

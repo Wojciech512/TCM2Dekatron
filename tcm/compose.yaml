@@ -7,14 +7,14 @@ services:
       dockerfile: tcm/docker/app.Dockerfile
     image: tcm-app:latest
     restart: unless-stopped
-    env_file:
-      - ../.env
+#    env_file:
+#      - secrets/.env
     volumes:
       - ./config:/opt/tcm/tcm/config:ro
       - app_data:/var/lib/tcm
-    devices:
-      - /dev/spidev0.0
-      - /dev/spidev0.1
+#    devices:
+#      - /dev/spidev0.0
+#      - /dev/spidev0.1
     privileged: false
     cap_add:
       - SYS_TIME

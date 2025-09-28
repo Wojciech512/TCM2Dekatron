@@ -1,10 +1,13 @@
-# Version constraints to ensure reproducible builds on Raspberry Pi OS Bookworm.
 fastapi==0.111.0
-uvicorn[standard]==0.30.1
+uvicorn==0.30.1
+uvloop==0.20.0
+httptools==0.6.1
+watchfiles==0.24.0
+passlib==1.7.4
+argon2-cffi==23.1.0
 jinja2==3.1.4
 python-multipart==0.0.9
 itsdangerous==2.2.0
-passlib[argon2]==1.7.4
 python-dotenv==1.0.1
 sqlalchemy==2.0.30
 alembic==1.13.1
