@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}TCM 2.0{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>TCM 2.0 – Panel operatorski</h1>
+        {% if user %}
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/panel/operator">Operator</a>
+            <a href="/panel/technik">Technik</a>
+            <a href="/panel/serwis">Serwis</a>
+            <a href="/logout">Wyloguj ({{ user.username }})</a>
+        </nav>
+        {% endif %}
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <small>ID: {{ config.metadata.id }} | Lokalizacja: {{ config.metadata.location }}</small>
+    </footer>
+</body>
+</html>

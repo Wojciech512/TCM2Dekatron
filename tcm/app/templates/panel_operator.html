@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Panel Operatora{% endblock %}
+{% block content %}
+<section>
+    <h2>Podgląd</h2>
+    <p>Alarm: {{ state.alarm_reason or 'brak' }}</p>
+    <p>Buzzer wyciszony: {{ 'tak' if state.buzzer_muted else 'nie' }}</p>
+</section>
+
+<section>
+    <h2>Sterowanie strike</h2>
+    <ul>
+    {% for strike_id, strike in config.strike.assignments.items() %}
+        <li>{{ strike_id }} – {% if strike.transistor %}
+            <a href="/api/v1/strike/{{ strike_id }}/trigger">Wyzwól ({{ strike.transistor }})</a>
+        {% else %}nie skonfigurowany{% endif %}</li>
+    {% endfor %}
+    </ul>
+</section>
+{% endblock %}

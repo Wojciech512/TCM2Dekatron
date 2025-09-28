@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Panel Technika{% endblock %}
+{% block content %}
+<section>
+    <h2>Progi temperaturowe</h2>
+    <ul>
+        <li>Grzałka: {{ config.thresholds.grzalka_c }} °C</li>
+        <li>Klimatyzacja: {{ config.thresholds.klimatyzacja_c }} °C</li>
+        <li>Wentylatory: {{ config.thresholds.went_c }} °C</li>
+        <li>Histereza: {{ config.thresholds.histereza_c }} °C</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Manualne sterowanie</h2>
+    <p>Tryb manualny: {{ 'włączony' if state.manual_mode else 'automatyczny' }}</p>
+    <table>
+        <tr><th>Wyjście</th><th>Stan wymuszony</th></tr>
+        {% for name, value in state.manual_overrides.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td>{{ 'ON' if value else 'OFF' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</section>
+
+<section>
+    <h2>Sieć</h2>
+    <p>Adres IPv4: {{ config.network.ipv4.address }}/{{ config.network.ipv4.netmask }}</p>
+    <p>Bramka: {{ config.network.ipv4.gateway }}</p>
+</section>
+{% endblock %}
