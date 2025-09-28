@@ -1,0 +1,106 @@
+# Konfiguracja TCM 2.0 (bez danych wrażliwych)
+# Plik ładowany przy starcie aplikacji FastAPI.
+
+metadata:
+  id: "TCM-01"
+  location: "szafa-telekom"
+  timezone: "Europe/Warsaw"
+
+network:
+  hostname: "tcm-gateway"
+  ipv4:
+    address: "192.168.0.100"
+    netmask: "255.255.255.0"
+    gateway: "192.168.0.1"
+  dns:
+    - "1.1.1.1"
+    - "8.8.8.8"
+
+loops:
+  fast_tick_seconds: 0.25
+  logic_tick_seconds: 60
+  flood_refresh_seconds: 120
+
+sensors:
+  dht11:
+    enabled: true
+    battery_pin: 4
+    cabinet_pin: 5
+  ds18b20:
+    enabled: false
+    bus_path: "/sys/bus/w1/devices"
+    ids: []
+  buzzer:
+    gpio_pin: 22
+
+thresholds:
+  grzalka_c: 5.0
+  klimatyzacja_c: 25.0
+  went_c: 30.0
+  histereza_c: 1.0
+
+inputs:
+  door_channels: ["A0", "A1", "A2", "A3", "A4", "A5"]
+  flood_channels: ["A6", "A7"]
+  polarities:
+    door_open_is_high: true
+    flood_active_is_low: true
+    dip_on_is_high: true
+  anti_glitch_ms: 150
+  anti_flap_seconds: 3
+
+outputs:
+  relays:
+    active_low: false
+    map:
+      alarm: ["K1"]
+      klimatyzacja: ["K2"]
+      oswietlenie: ["K3"]
+      grzalka: ["K4"]
+      went_230v: ["K5"]
+      went_rezerwowy: ["K6"]
+  transistors:
+    active_low: false
+    map:
+      went_48v: ["T1"]
+      strike_panel: []
+
+strike:
+  default_duration_seconds: 10
+  assignments:
+    strike_1:
+      transistor: "T2"
+    strike_2:
+      transistor: null
+    strike_3:
+      transistor: null
+    strike_4:
+      transistor: null
+    strike_5:
+      transistor: null
+    strike_6:
+      transistor: null
+
+ui:
+  panels:
+    operator:
+      enabled: true
+    technik:
+      enabled: true
+    serwis:
+      require_dip_high: true
+  dashboard:
+    show_outputs: ["K1", "K2", "K3", "K4", "K5", "T1"]
+
+logging:
+  sqlite_path: "/var/lib/tcm/events.db"
+  retention_days: 365
+  encrypted_fields:
+    - payload_json
+  export_chunk_size: 500
+
+secrets:
+  secret_key_file: "/run/secrets/app_secret_key"
+  fernet_key_file: "/run/secrets/app_fernet_key"
+  admin_hash_file: "/run/secrets/admin_bootstrap_hash"
+

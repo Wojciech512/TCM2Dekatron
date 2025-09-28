@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: tcm/docker/app.Dockerfile
+    image: tcm-app:latest
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    volumes:
+      - ./config:/opt/tcm/tcm/config:ro
+      - app_data:/var/lib/tcm
+    devices:
+      - /dev/spidev0.0
+      - /dev/spidev0.1
+    privileged: false
+    cap_add:
+      - SYS_TIME
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    secrets:
+      - app_secret_key
+      - app_fernet_key
+      - admin_bootstrap_hash
+
+  reverse-proxy:
+    build:
+      context: ..
+      dockerfile: tcm/docker/proxy.Dockerfile
+    image: tcm-proxy:latest
+    restart: unless-stopped
+    ports:
+      - "443:8443"
+    volumes:
+      - ./deploy/reverse-proxy/certs:/etc/nginx/certs:ro
+      - ./deploy/reverse-proxy/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+
+secrets:
+  app_secret_key:
+    file: ./secrets/app_secret_key
+  app_fernet_key:
+    file: ./secrets/app_fernet_key
+  admin_bootstrap_hash:
+    file: ./secrets/admin_bootstrap_hash
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  app_data:

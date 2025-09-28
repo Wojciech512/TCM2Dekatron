@@ -1,0 +1,15 @@
+# Placeholder list of runtime dependencies for FastAPI-based TCM 2.0.
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+itsdangerous
+passlib[argon2]
+python-dotenv
+sqlalchemy
+alembic
+pydantic-settings
+cryptography
+slowapi
+adafruit-circuitpython-mcp230xx
+Adafruit-DHT
