@@ -31,6 +31,9 @@
           {% if user.role in ['technik', 'serwis'] and config and config.ui.panels.technik.enabled %}
             <a class="btn" href="{{ request.url_for('panel_technik') }}">Panel technika</a>
           {% endif %}
+          {% if user.role in ['technik', 'serwis'] %}
+            <a class="btn" href="{{ request.url_for('logs_view') }}">Event Logs</a>
+          {% endif %}
           {% if user.role == 'serwis' and config and config.ui.panels.serwis.enabled %}
             <a class="btn" href="{{ request.url_for('panel_serwis') }}">Panel serwisowy</a>
           {% endif %}

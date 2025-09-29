@@ -123,6 +123,8 @@ class LoggingConfig(BaseModel):
     retention_days: int = 365
     encrypted_fields: List[str] = Field(default_factory=list)
     export_chunk_size: int = 500
+    page_size: int = 10
+    max_records: int = 5000
 
 
 class SecretRefs(BaseModel):
