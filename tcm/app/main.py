@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import os
+import asyncio
+import contextlib
+
 from pathlib import Path
 from typing import Dict, Optional
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi.errors import RateLimitExceeded
@@ -93,14 +96,22 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.on_event("startup")
     async def startup_event() -> None:
-        await control_loop.start()
+        if hasattr(control_loop, "initialize"):
+            await control_loop.initialize()
+        app.state.control_task = asyncio.create_task(control_loop.start())
 
     @app.on_event("shutdown")
     async def shutdown_event() -> None:
-        await control_loop.stop()
+        task = getattr(app.state, "control_task", None)
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        if hasattr(control_loop, "stop"):
+            await control_loop.stop()
 
     @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_handler(request: Request, exc: RateLimitExceeded):  # pragma: no cover
+    async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         return templates.TemplateResponse(
             "429.html",
             {"request": request, "detail": "Too many requests"},
@@ -183,8 +194,12 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         context["user"] = user
         return templates.TemplateResponse("panel_serwis.html", context)
 
-    return app
+    @app.get("/health", include_in_schema=False, response_class=PlainTextResponse)
+    @limiter.exempt
+    async def health():
+        return "OK"
 
+    return app
 
 app = create_app()
 

@@ -22,12 +22,10 @@ RUN python -m pip install --upgrade pip \
 
 COPY tcm/ ./tcm/
 
-# użytkownik uruchomieniowy
 RUN useradd --create-home --uid 1000 --shell /bin/bash tcm \
     && chown -R tcm:tcm ${APP_HOME} \
-    && install -d -o tcm -g tcm /var/lib/tcm   # <-- KATALOG NA BAZĘ, wlasność 'tcm'
+    && install -d -o tcm -g tcm /var/lib/tcm
 
-# (opcjonalnie) jeśli app.yaml wskazuje /var/lib/tcm/events.db:
 ENV TCM_DB_DIR=/var/lib/tcm
 
 USER tcm
@@ -40,4 +38,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${UVICORN_PORT}/health || exit 1
 
-CMD ["uvicorn", "tcm.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
+CMD ["uvicorn","tcm.app.main:app","--host","0.0.0.0","--port","8000","--log-level","debug","--lifespan","off"]
+#CMD ["uvicorn","tcm.app.main:app","--host","0.0.0.0","--port","8000"]

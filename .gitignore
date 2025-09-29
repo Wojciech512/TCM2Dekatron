@@ -2,5 +2,5 @@
 *.iml
 *.iws
 *.ipr
-tcm/secrets
+tcm/secrets/
 .env
