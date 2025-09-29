@@ -73,7 +73,7 @@ def set_manual_mode(
 
 
 @router.get("/strike/{strike_id}/trigger", response_model=StrikeTriggerResponse)
-@limiter.limit("10/hour")
+@limiter.limit("10/15seconds")
 def trigger_strike(
     request: Request,
     strike_id: str,
