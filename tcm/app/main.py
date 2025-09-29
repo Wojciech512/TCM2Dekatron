@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import asyncio
 import contextlib
+import logging
 import math
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -24,6 +25,7 @@ from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 
 from fpdf import FPDF
+from fontTools.ttLib import TTLibError
 
 from .api import state as state_router
 from .api import v1 as v1_router
@@ -38,6 +40,8 @@ from .services.users import UserStore
 
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+logger = logging.getLogger(__name__)
 
 
 def load_secret(key: str, file_path: Optional[Path]) -> Optional[str]:
@@ -382,9 +386,16 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         pdf.set_auto_page_break(auto=True, margin=15)
         font_name = "Helvetica"
         if font_path.exists():
-            pdf.add_font("DejaVu", "", str(font_path), uni=True)
-            pdf.add_font("DejaVu", "B", str(font_path), uni=True)
-            font_name = "DejaVu"
+            try:
+                pdf.add_font("DejaVu", "", str(font_path), uni=True)
+                pdf.add_font("DejaVu", "B", str(font_path), uni=True)
+                font_name = "DejaVu"
+            except (RuntimeError, OSError, TTLibError) as exc:
+                logger.warning(
+                    "Failed to load unicode font from %s: %s. Falling back to Helvetica.",
+                    font_path,
+                    exc,
+                )
 
         pdf.add_page()
         pdf.set_font(font_name, "B", 14)
