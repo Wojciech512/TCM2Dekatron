@@ -61,16 +61,7 @@ class StateContainer:
 
     def read(self) -> RuntimeState:
         with self._lock:
-            return RuntimeState(
-                inputs=dict(self._state.inputs),
-                sensors=SensorSnapshot(**self._state.sensors.__dict__),
-                outputs=dict(self._state.outputs),
-                alarm_reason=self._state.alarm_reason,
-                buzzer_muted=self._state.buzzer_muted,
-                strike_active_until=self._state.strike_active_until,
-                last_updated=self._state.last_updated,
-                error=self._state.error,
-            )
+            return self._snapshot_unlocked()
 
     def update(self, **kwargs) -> RuntimeState:
         with self._lock:
@@ -86,7 +77,29 @@ class StateContainer:
                 elif hasattr(self._state, key):
                     setattr(self._state, key, value)
             self._state.last_updated = time()
-            return self.read()
+            return self._snapshot_unlocked()
+
+    def _snapshot_unlocked(self) -> RuntimeState:
+        """Return a deep copy of the runtime state.
+
+        The caller must hold ``self._lock`` before invoking this helper.  This
+        avoids attempting to reacquire the non-reentrant lock inside
+        ``update`` while still giving both ``read`` and ``update`` access to a
+        fresh copy of the runtime data.
+        """
+
+        return RuntimeState(
+            inputs=dict(self._state.inputs),
+            sensors=SensorSnapshot(**self._state.sensors.__dict__),
+            outputs=dict(self._state.outputs),
+            alarm_reason=self._state.alarm_reason,
+            buzzer_muted=self._state.buzzer_muted,
+            strike_active_until=self._state.strike_active_until,
+            last_updated=self._state.last_updated,
+            error=self._state.error,
+            manual_mode=self._state.manual_mode,
+            manual_overrides=dict(self._state.manual_overrides),
+        )
 
 
 GLOBAL_STATE = StateContainer()
