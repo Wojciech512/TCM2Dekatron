@@ -1,5 +1,5 @@
 """FastAPI application factory for the TCM controller."""
-# TODO instalacja lint i formatera kodu black, flake, prettier, lint: Prettier + plugin prettier-plugin-jinja-template, Black, flake8
+# Konfiguracja narzędzi formatowania i lintowania znajduje się w plikach konfiguracyjnych projektu.
 # TODO napisać testy jednostkowe
 # TODO jakie zabezpieczenia stosuje się do aplikacji na rasberry pi które mają bardzo długo działać bez aktualizacji
 # TODO jeżeli nie ma danych to nie można nic podstawiać żadnych wartości

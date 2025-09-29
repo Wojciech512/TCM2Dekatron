@@ -2,74 +2,99 @@
 {% extends "base.html" %}
 {% block title %}Panel operatora{% endblock %}
 {% block content %}
-<div class="row">
-  <div class="col">
-    <div class="section">
-      <h2>Status alarmu</h2>
-      <div class="card">
-        <p>Alarm aktywny: <strong>{{ 'tak' if state.alarm_reason else 'nie' }}</strong></p>
-        <p>Powód: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
-        <p>Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
-        <p>Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
+  <div class="row">
+    <div class="col">
+      <div class="section">
+        <h2>Status alarmu</h2>
+        <div class="card">
+          <p>Alarm aktywny: <strong>{{ 'tak' if state.alarm_reason else 'nie' }}</strong></p>
+          <p>Powód: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
+          <p>Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
+          <p>
+            Strike aktywny do:
+            <strong
+              >{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="section">
+        <h2>Podgląd czujników</h2>
+        <div class="card">
+          <table>
+            <tbody>
+              <tr>
+                <th>Bateria — temperatura</th>
+                <td>
+                  {{ state.sensors.temp_batt if state.sensors.temp_batt is not none else '—' }} °C
+                </td>
+              </tr>
+              <tr>
+                <th>Bateria — wilgotność</th>
+                <td>
+                  {{ state.sensors.hum_batt if state.sensors.hum_batt is not none else '—' }} %
+                </td>
+              </tr>
+              <tr>
+                <th>Szafa — temperatura</th>
+                <td>
+                  {{ state.sensors.temp_cab if state.sensors.temp_cab is not none else '—' }} °C
+                </td>
+              </tr>
+              <tr>
+                <th>Szafa — wilgotność</th>
+                <td>{{ state.sensors.hum_cab if state.sensors.hum_cab is not none else '—' }} %</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col">
-    <div class="section">
-      <h2>Podgląd czujników</h2>
-      <div class="card">
-        <table>
-          <tbody>
-            <tr><th>Bateria — temperatura</th><td>{{ state.sensors.temp_batt if state.sensors.temp_batt is not none else '—' }} °C</td></tr>
-            <tr><th>Bateria — wilgotność</th><td>{{ state.sensors.hum_batt if state.sensors.hum_batt is not none else '—' }} %</td></tr>
-            <tr><th>Szafa — temperatura</th><td>{{ state.sensors.temp_cab if state.sensors.temp_cab is not none else '—' }} °C</td></tr>
-            <tr><th>Szafa — wilgotność</th><td>{{ state.sensors.hum_cab if state.sensors.hum_cab is not none else '—' }} %</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
-<div class="section">
-  <h2>Sterowanie strike</h2>
-  <div class="card">
-    {% if config.strike.assignments %}
-      <div class="grid">
-        {% for strike_id, strike in config.strike.assignments.items() %}
-          <div class="strike-action">
-            <strong>{{ strike_id|replace('_', ' ')|upper }}</strong>
-            {% if strike.transistor %}
-              <button
-                class="btn"
-                type="button"
-                data-strike-endpoint="{{ request.url_for('trigger_strike', strike_id=strike_id) }}"
-                data-strike-label="{{ strike_id|replace('_', ' ')|upper }}"
-              >Wyzwól ({{ strike.transistor }})</button>
-            {% else %}
-              <span class="pill off">Nie skonfigurowano</span>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p>Brak przypisań elektrozaczepów.</p>
-    {% endif %}
+  <div class="section">
+    <h2>Sterowanie strike</h2>
+    <div class="card">
+      {% if config.strike.assignments %}
+        <div class="grid">
+          {% for strike_id, strike in config.strike.assignments.items() %}
+            <div class="strike-action">
+              <strong>{{ strike_id|replace('_', ' ')|upper }}</strong>
+              {% if strike.transistor %}
+                <button
+                  class="btn"
+                  type="button"
+                  data-strike-endpoint="{{ request.url_for('trigger_strike', strike_id=strike_id) }}"
+                  data-strike-label="{{ strike_id|replace('_', ' ')|upper }}"
+                >
+                  Wyzwól ({{ strike.transistor }})
+                </button>
+              {% else %}
+                <span class="pill off">Nie skonfigurowano</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>Brak przypisań elektrozaczepów.</p>
+      {% endif %}
+    </div>
   </div>
-</div>
 {% endblock %}
 {% block scripts %}
   {{ super() }}
   <script>
-    (function(){
+    (function () {
       const buttons = document.querySelectorAll('[data-strike-endpoint]');
-      if(!buttons.length){
+      if (!buttons.length) {
         return;
       }
-      buttons.forEach(function(btn){
-        btn.addEventListener('click', function(){
+      buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
           const endpoint = btn.getAttribute('data-strike-endpoint');
-          if(!endpoint){
+          if (!endpoint) {
             return;
           }
           const label = btn.getAttribute('data-strike-label') || 'STRIKE';
@@ -78,38 +103,51 @@
             method: 'GET',
             credentials: 'same-origin',
             headers: {
-              'Accept': 'application/json'
-            }
-          }).then(function(resp){
-            if(!resp.ok){
-              throw resp;
-            }
-            return resp.json();
-          }).then(function(payload){
-            const until = payload && payload.active_until ? new Date(payload.active_until * 1000).toLocaleString() : null;
-            const message = until
-              ? label + ' wyzwolony. Aktywny do: ' + until + '.'
-              : label + ' wyzwolony.';
-            if(window.TCMToast){
-              window.TCMToast(message, { type: 'success' });
-            }
-          }).catch(function(err){
-            if(window.TCMToast){
-              var message = label + ' — nie udało się wyzwolić.';
-              if(err && typeof err.json === 'function'){
-                err.json().then(function(body){
-                  const detail = body && (body.detail || body.message);
-                  window.TCMToast(detail ? message + ' ' + detail : message, { type: 'error', duration: 6000 });
-                }).catch(function(){
-                  window.TCMToast(message, { type: 'error', duration: 6000 });
-                });
-              } else {
-                window.TCMToast(message, { type: 'error', duration: 6000 });
+              Accept: 'application/json',
+            },
+          })
+            .then(function (resp) {
+              if (!resp.ok) {
+                throw resp;
               }
-            }
-          }).finally(function(){
-            btn.disabled = false;
-          });
+              return resp.json();
+            })
+            .then(function (payload) {
+              const until =
+                payload && payload.active_until
+                  ? new Date(payload.active_until * 1000).toLocaleString()
+                  : null;
+              const message = until
+                ? label + ' wyzwolony. Aktywny do: ' + until + '.'
+                : label + ' wyzwolony.';
+              if (window.TCMToast) {
+                window.TCMToast(message, { type: 'success' });
+              }
+            })
+            .catch(function (err) {
+              if (window.TCMToast) {
+                var message = label + ' — nie udało się wyzwolić.';
+                if (err && typeof err.json === 'function') {
+                  err
+                    .json()
+                    .then(function (body) {
+                      const detail = body && (body.detail || body.message);
+                      window.TCMToast(detail ? message + ' ' + detail : message, {
+                        type: 'error',
+                        duration: 6000,
+                      });
+                    })
+                    .catch(function () {
+                      window.TCMToast(message, { type: 'error', duration: 6000 });
+                    });
+                } else {
+                  window.TCMToast(message, { type: 'error', duration: 6000 });
+                }
+              }
+            })
+            .finally(function () {
+              btn.disabled = false;
+            });
         });
       });
     })();

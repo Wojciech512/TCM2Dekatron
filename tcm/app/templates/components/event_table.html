@@ -1,38 +1,40 @@
 {% macro render_event_table(events) %}
-<table class="event-table">
-  <thead>
-    <tr>
-      <th>Data</th>
-      <th>Typ</th>
-      <th>Treść</th>
-      <th>Dodatkowe dane</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% if events %}
-    {% for event in events %}
-    <tr>
-      <td class="mono">{{ event.ts }}</td>
-      <td><span class="badge event-type-badge">{{ event.type }}</span></td>
-      <td>{{ event.message }}</td>
-      <td>
-        {% if event.payload_items %}
-          <div class="event-payload">
-            {% for item in event.payload_items %}
-              <span class="chip meta-chip"><span class="mono">{{ item.key }}:</span> {{ item.value }}</span>
-            {% endfor %}
-          </div>
-        {% else %}
-          <span class="muted">—</span>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  {% else %}
-    <tr>
-      <td colspan="4" class="muted">Brak zdarzeń do wyświetlenia.</td>
-    </tr>
-  {% endif %}
-  </tbody>
-</table>
+  <table class="event-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Typ</th>
+        <th>Treść</th>
+        <th>Dodatkowe dane</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if events %}
+        {% for event in events %}
+          <tr>
+            <td class="mono">{{ event.ts }}</td>
+            <td><span class="badge event-type-badge">{{ event.type }}</span></td>
+            <td>{{ event.message }}</td>
+            <td>
+              {% if event.payload_items %}
+                <div class="event-payload">
+                  {% for item in event.payload_items %}
+                    <span class="chip meta-chip"
+                      ><span class="mono">{{ item.key }}:</span> {{ item.value }}</span
+                    >
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="4" class="muted">Brak zdarzeń do wyświetlenia.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
 {% endmacro %}

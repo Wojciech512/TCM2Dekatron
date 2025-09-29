@@ -1,110 +1,118 @@
 <!doctype html>
 <html lang="pl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}TCM Panel{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
-  {% block head_extra %}{% endblock %}
-</head>
-<body>
-  {% set panel_id = config.metadata.id if config and config.metadata else 'TCM' %}
-  {% set location = config.metadata.location if config and config.metadata else '' %}
-  {% set timezone = config.metadata.timezone if config and config.metadata else '' %}
-  <header>
-    <div class="header-bar">
-      <div class="brand">
-        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Z" stroke="#7aa2ff" stroke-width="1.5"/><path d="M7 9h10M7 13h6" stroke="#7aa2ff" stroke-width="1.5"/></svg>
-        <span>TCM Panel</span>
-        <div class="brand-details">
-          <span class="chip">ID: {{ panel_id }}</span>
-          {% if location %}<span class="chip">Lokalizacja: {{ location }}</span>{% endif %}
-          {% if timezone %}<span class="chip">Strefa: {{ timezone }}</span>{% endif %}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}TCM Panel{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    {% set panel_id = config.metadata.id if config and config.metadata else 'TCM' %}
+    {% set location = config.metadata.location if config and config.metadata else '' %}
+    {% set timezone = config.metadata.timezone if config and config.metadata else '' %}
+    <header>
+      <div class="header-bar">
+        <div class="brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Z"
+              stroke="#7aa2ff"
+              stroke-width="1.5"
+            />
+            <path d="M7 9h10M7 13h6" stroke="#7aa2ff" stroke-width="1.5" />
+          </svg>
+          <span>TCM Panel</span>
+          <div class="brand-details">
+            <span class="chip">ID: {{ panel_id }}</span>
+            {% if location %}<span class="chip">Lokalizacja: {{ location }}</span>{% endif %}
+            {% if timezone %}<span class="chip">Strefa: {{ timezone }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="toolbar">
+          {% if user %}
+            <a class="btn" href="{{ request.url_for('dashboard') }}">Dashboard</a>
+            {% if config and config.ui.panels.operator.enabled %}
+              <a class="btn" href="{{ request.url_for('panel_operator') }}">Panel operatora</a>
+            {% endif %}
+            {% if user.role in ['technik', 'serwis'] and config and config.ui.panels.technik.enabled %}
+              <a class="btn" href="{{ request.url_for('panel_technik') }}">Panel technika</a>
+            {% endif %}
+            {% if user.role in ['technik', 'serwis'] %}
+              <a class="btn" href="{{ request.url_for('logs_view') }}">Event Logs</a>
+            {% endif %}
+            {% if user.role == 'serwis' and config and config.ui.panels.serwis.enabled %}
+              <a class="btn" href="{{ request.url_for('panel_serwis') }}">Panel serwisowy</a>
+            {% endif %}
+            <span class="chip">Zalogowano jako <strong>{{ user.username }}</strong></span>
+            <a class="btn" href="{{ request.url_for('logout') }}">Wyloguj</a>
+          {% else %}
+            <span class="chip">Panel zabezpieczony — zaloguj się, aby kontynuować</span>
+          {% endif %}
         </div>
       </div>
-      <div class="toolbar">
-        {% if user %}
-          <a class="btn" href="{{ request.url_for('dashboard') }}">Dashboard</a>
-          {% if config and config.ui.panels.operator.enabled %}
-            <a class="btn" href="{{ request.url_for('panel_operator') }}">Panel operatora</a>
-          {% endif %}
-          {% if user.role in ['technik', 'serwis'] and config and config.ui.panels.technik.enabled %}
-            <a class="btn" href="{{ request.url_for('panel_technik') }}">Panel technika</a>
-          {% endif %}
-          {% if user.role in ['technik', 'serwis'] %}
-            <a class="btn" href="{{ request.url_for('logs_view') }}">Event Logs</a>
-          {% endif %}
-          {% if user.role == 'serwis' and config and config.ui.panels.serwis.enabled %}
-            <a class="btn" href="{{ request.url_for('panel_serwis') }}">Panel serwisowy</a>
-          {% endif %}
-          <span class="chip">Zalogowano jako <strong>{{ user.username }}</strong></span>
-          <a class="btn" href="{{ request.url_for('logout') }}">Wyloguj</a>
-        {% else %}
-          <span class="chip">Panel zabezpieczony — zaloguj się, aby kontynuować</span>
-        {% endif %}
-      </div>
-    </div>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-  <footer>
-    {% if config %}
-      <span class="chip">Host: {{ config.network.hostname }}</span>
-      <span class="chip">IPv4: {{ config.network.ipv4.address }}</span>
-      <span class="chip">Maska: {{ config.network.ipv4.netmask }}</span>
-      <span class="chip">Brama: {{ config.network.ipv4.gateway }}</span>
-    {% else %}
-      <span class="chip">TCM 2.0</span>
-    {% endif %}
-  </footer>
-  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
-  <script>
-    (function(){
-      const container = document.getElementById('toast-container');
-      function makeToast(data){
-        if(!data || !container) return;
-        const toast = document.createElement('div');
-        toast.className = 'toast ' + (data.type || 'info');
-        const message = document.createElement('div');
-        message.textContent = data.message || '';
-        toast.appendChild(message);
-        const close = document.createElement('button');
-        close.type = 'button';
-        close.setAttribute('aria-label', 'Zamknij powiadomienie');
-        close.textContent = 'X';
-        close.addEventListener('click', function(ev){
-          ev.preventDefault();
-          hideToast(toast);
-        });
-        toast.appendChild(close);
-        container.appendChild(toast);
-        requestAnimationFrame(function(){ toast.classList.add('show'); });
-        const timeout = typeof data.duration === 'number' ? data.duration : 4000;
-        if(timeout > 0){
-          setTimeout(function(){ hideToast(toast); }, timeout);
+    </header>
+    <main>{% block content %}{% endblock %}</main>
+    <footer>
+      {% if config %}
+        <span class="chip">Host: {{ config.network.hostname }}</span>
+        <span class="chip">IPv4: {{ config.network.ipv4.address }}</span>
+        <span class="chip">Maska: {{ config.network.ipv4.netmask }}</span>
+        <span class="chip">Brama: {{ config.network.ipv4.gateway }}</span>
+      {% else %}
+        <span class="chip">TCM 2.0</span>
+      {% endif %}
+    </footer>
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <!-- prettier-ignore-start -->
+    <script>
+      (function(){
+        const container = document.getElementById('toast-container');
+        function makeToast(data){
+          if(!data || !container) return;
+          const toast = document.createElement('div');
+          toast.className = 'toast ' + (data.type || 'info');
+          const message = document.createElement('div');
+          message.textContent = data.message || '';
+          toast.appendChild(message);
+          const close = document.createElement('button');
+          close.type = 'button';
+          close.setAttribute('aria-label', 'Zamknij powiadomienie');
+          close.textContent = 'X';
+          close.addEventListener('click', function(ev){
+            ev.preventDefault();
+            hideToast(toast);
+          });
+          toast.appendChild(close);
+          container.appendChild(toast);
+          requestAnimationFrame(function(){ toast.classList.add('show'); });
+          const timeout = typeof data.duration === 'number' ? data.duration : 4000;
+          if(timeout > 0){
+            setTimeout(function(){ hideToast(toast); }, timeout);
+          }
+          return toast;
         }
-        return toast;
-      }
-      function hideToast(toast){
-        toast.classList.remove('show');
-        toast.addEventListener('transitionend', function(){
-          toast.remove();
-        }, { once: true });
-      }
-      window.TCMToast = function(message, options){
-        const data = typeof message === 'string' ? { message: message } : (message || {});
-        if(typeof message === 'string' && options){
-          Object.assign(data, options);
+        function hideToast(toast){
+          toast.classList.remove('show');
+          toast.addEventListener('transitionend', function(){
+            toast.remove();
+          }, { once: true });
         }
-        return makeToast(data);
-      };
-      const initial = {{ toast | default(None) | tojson }};
-      if(initial){
-        makeToast(initial);
-      }
-    })();
-  </script>
-  {% block scripts %}{% endblock %}
-</body>
+        window.TCMToast = function(message, options){
+          const data = typeof message === 'string' ? { message: message } : (message || {});
+          if(typeof message === 'string' && options){
+            Object.assign(data, options);
+          }
+          return makeToast(data);
+        };
+        const initial = {{ toast | default(None) | tojson }};
+        if(initial){
+          makeToast(initial);
+        }
+      })();
+    </script>
+    <!-- prettier-ignore-end -->
+    {% block scripts %}
+    {% endblock %}
+  </body>
 </html>

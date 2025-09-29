@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "plugins": ["prettier-plugin-jinja-template"],
+  "printWidth": 100,
+  "singleQuote": true,
+  "overrides": [
+    {
+      "files": ["*.html", "*.jinja", "*.j2"],
+      "options": {
+        "parser": "jinja-template"
+      }
+    }
+  ]
+}
