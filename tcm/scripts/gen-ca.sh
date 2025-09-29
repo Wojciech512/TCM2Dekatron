@@ -49,7 +49,7 @@ for role in Operator Technik Serwis; do
       -extfile <(printf "extendedKeyUsage=clientAuth\nsubjectAltName=DNS:${lower}.local")
   cat "${WORKDIR}/clients/${lower}.crt.pem" "${OUTPUT}/ca-chain.crt" > "${WORKDIR}/clients/${lower}-fullchain.pem"
   openssl pkcs12 -export -in "${WORKDIR}/clients/${lower}-fullchain.pem" \
-      -inkey "${WORKDIR}/clients/${lower}.key.pem" -out "${OUTPUT}/${lower}.p12" -passout pass:changeme
+      -inkey "${WORKDIR}/clients/${lower}.key.pem" -out "${OUTPUT}/${lower}.p12" -passout pass:Test123!
   tar -czf "${OUTPUT}/client-${lower}.tar.gz" \
       -C "${WORKDIR}/clients" "${lower}.key.pem" "${lower}-fullchain.pem" \
       -C "${OUTPUT}" "${lower}.p12"

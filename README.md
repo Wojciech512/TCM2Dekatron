@@ -14,7 +14,7 @@ Repozytorium zawiera kompletną implementację aplikacji TCM 2.0 w FastAPI z Jin
 ## Uruchomienie lokalne (tryb developerski)
 1. Zainstaluj zależności: `pip install -r requirements.txt`.
 2. Ustaw zmienne środowiskowe lub pliki secrets (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`):
-    - generowanie: `TCM_ADMIN_HASH=...` **[Windows tested:]:** `pip install passlib[argon2]` `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('admin'))"`
+    - generowanie: `TCM_ADMIN_HASH=...` **[Windows and Linux tested:]:** `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))""`
     - generowanie: `TCM_FERNET_KEY=...` **[Windows tested:]:** `python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
     - generowanie: `TCM_SECRET_KEY=...` **[Windows tested:]:** `python -c "import secrets; print(secrets.token_hex(64))"`
 4. Uruchom aplikację: `uvicorn tcm.app.main:app --reload`.

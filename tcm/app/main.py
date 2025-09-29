@@ -124,7 +124,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request, user: Optional[UserSession] = Depends(get_current_user)):
         if not user:
-            return templates.TemplateResponse("login.html", {"request": request, "user": None, "config": config})
+            csrf = app.state.auth_manager.issue_csrf(request.session)
+            return templates.TemplateResponse("login.html", {
+                "request": request, "user": None, "config": config, "csrf_token": csrf})
         return RedirectResponse(url="/dashboard")
 
     @app.get("/login", response_class=HTMLResponse)
