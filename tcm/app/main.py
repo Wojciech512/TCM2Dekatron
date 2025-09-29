@@ -3,6 +3,7 @@
 # TODO napisać testy jednostkowe
 # TODO jakie zabezpieczenia/funkcjonalności stosuje się do aplikacji na rasberry pi które mają bardzo długo działać bez aktualizacji
 # TODO czy przechowywanie sekretów w formie pliku tekstowego to dobry pomysł?
+# TODO naprawić pobieranie logów w pdf
 from __future__ import annotations
 
 import os
