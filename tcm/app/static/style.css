@@ -13,13 +13,16 @@ body{
     radial-gradient(1200px 800px at 110% -10%, #0ea5e955, transparent 60%),
     linear-gradient(180deg,#0a0f23 0%, #0b1020 100%);
   min-height:100vh;
+  height:100vh;
   display:flex;
   flex-direction:column;
+  overflow:hidden;
 }
 header,footer{
   padding:16px 22px;
   background:var(--panel);
   border-bottom:1px solid #ffffff0f;
+  flex-shrink:0;
 }
 footer{
   border-top:1px solid #ffffff0f;
@@ -29,7 +32,15 @@ footer{
   gap:10px;
   flex-wrap:wrap;
 }
-main{padding:22px; max-width:1280px; width:100%; margin:0 auto}
+main{
+  padding:22px;
+  max-width:1280px;
+  width:100%;
+  margin:0 auto;
+  flex:1 1 auto;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
 .row{display:flex; flex-wrap:wrap; gap:22px}
 .col{flex:1 1 360px}
 .card{
