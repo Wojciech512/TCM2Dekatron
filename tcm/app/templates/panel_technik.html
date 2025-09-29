@@ -1,70 +1,119 @@
 {% extends "base.html" %}
 {% block title %}Panel technika{% endblock %}
 {% block content %}
-<div class="row">
-  <div class="col">
-    <div class="section">
-      <h2>Progi temperaturowe</h2>
-      <div class="card">
-        <table>
-          <tbody>
-            <tr><th>Grzałka</th><td>{{ config.thresholds.grzalka_c }} °C</td></tr>
-            <tr><th>Klimatyzacja</th><td>{{ config.thresholds.klimatyzacja_c }} °C</td></tr>
-            <tr><th>Wentylatory</th><td>{{ config.thresholds.went_c }} °C</td></tr>
-            <tr><th>Histereza</th><td>{{ config.thresholds.histereza_c }} °C</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2>Tryb manualny</h2>
-      <div class="card">
-        <p>Tryb manualny: <strong>{{ 'włączony' if state.manual_mode else 'wyłączony' }}</strong></p>
-        <table class="table-spacing">
-          <thead><tr><th>Wyjście</th><th>Stan wymuszony</th></tr></thead>
-          <tbody>
-            {% for name, value in state.manual_overrides.items() %}
+  <div class="row">
+    <div class="col">
+      <div class="section">
+        <h2>Progi temperaturowe</h2>
+        <div class="card">
+          <table>
+            <tbody>
               <tr>
-                <th>{{ name|replace('_', ' ')|upper }}</th>
-                <td><span class="pill {{ 'on' if value else 'off' }}">{{ 'ON' if value else 'OFF' }}</span></td>
+                <th>Grzałka</th>
+                <td>{{ config.thresholds.grzalka_c }} °C</td>
               </tr>
-            {% endfor %}
-            {% if not state.manual_overrides %}
-              <tr><td colspan="2"><i>Brak wymuszonych wyjść.</i></td></tr>
-            {% endif %}
-          </tbody>
-        </table>
+              <tr>
+                <th>Klimatyzacja</th>
+                <td>{{ config.thresholds.klimatyzacja_c }} °C</td>
+              </tr>
+              <tr>
+                <th>Wentylatory</th>
+                <td>{{ config.thresholds.went_c }} °C</td>
+              </tr>
+              <tr>
+                <th>Histereza</th>
+                <td>{{ config.thresholds.histereza_c }} °C</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Tryb manualny</h2>
+        <div class="card">
+          <p>
+            Tryb manualny: <strong>{{ 'włączony' if state.manual_mode else 'wyłączony' }}</strong>
+          </p>
+          <table class="table-spacing">
+            <thead>
+              <tr>
+                <th>Wyjście</th>
+                <th>Stan wymuszony</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for name, value in state.manual_overrides.items() %}
+                <tr>
+                  <th>{{ name|replace('_', ' ')|upper }}</th>
+                  <td>
+                    <span class="pill {{ 'on' if value else 'off' }}"
+                      >{{ 'ON' if value else 'OFF' }}</span
+                    >
+                  </td>
+                </tr>
+              {% endfor %}
+              {% if not state.manual_overrides %}
+                <tr>
+                  <td colspan="2"><i>Brak wymuszonych wyjść.</i></td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="section">
+        <h2>Sieć</h2>
+        <div class="card">
+          <table>
+            <tbody>
+              <tr>
+                <th>Nazwa hosta</th>
+                <td>{{ config.network.hostname }}</td>
+              </tr>
+              <tr>
+                <th>Adres IPv4</th>
+                <td>{{ config.network.ipv4.address }}</td>
+              </tr>
+              <tr>
+                <th>Maska</th>
+                <td>{{ config.network.ipv4.netmask }}</td>
+              </tr>
+              <tr>
+                <th>Brama</th>
+                <td>{{ config.network.ipv4.gateway }}</td>
+              </tr>
+              <tr>
+                <th>DNS</th>
+                <td>{{ ', '.join(config.network.dns) if config.network.dns else '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Polaryzacje wejść</h2>
+        <div class="card">
+          <ul class="list-plain">
+            <li>
+              Drzwi otwarte gdy
+              {{ 'poziom wysoki' if config.inputs.polarities.door_open_is_high else 'poziom niski' }}
+            </li>
+            <li>
+              Zalanie aktywne gdy
+              {{ 'poziom niski' if config.inputs.polarities.flood_active_is_low else 'poziom wysoki' }}
+            </li>
+            <li>
+              DIP w pozycji ON gdy
+              {{ 'poziom wysoki' if config.inputs.polarities.dip_on_is_high else 'poziom niski' }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
-
-  <div class="col">
-    <div class="section">
-      <h2>Sieć</h2>
-      <div class="card">
-        <table>
-          <tbody>
-            <tr><th>Nazwa hosta</th><td>{{ config.network.hostname }}</td></tr>
-            <tr><th>Adres IPv4</th><td>{{ config.network.ipv4.address }}</td></tr>
-            <tr><th>Maska</th><td>{{ config.network.ipv4.netmask }}</td></tr>
-            <tr><th>Brama</th><td>{{ config.network.ipv4.gateway }}</td></tr>
-            <tr><th>DNS</th><td>{{ ', '.join(config.network.dns) if config.network.dns else '—' }}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2>Polaryzacje wejść</h2>
-      <div class="card">
-        <ul class="list-plain">
-          <li>Drzwi otwarte gdy {{ 'poziom wysoki' if config.inputs.polarities.door_open_is_high else 'poziom niski' }}</li>
-          <li>Zalanie aktywne gdy {{ 'poziom niski' if config.inputs.polarities.flood_active_is_low else 'poziom wysoki' }}</li>
-          <li>DIP w pozycji ON gdy {{ 'poziom wysoki' if config.inputs.polarities.dip_on_is_high else 'poziom niski' }}</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}

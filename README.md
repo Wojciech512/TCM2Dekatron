@@ -34,3 +34,22 @@ Kontener aplikacyjny honoruje zmienną `TCM_APP_MODE`:
 Wartość można nadać przez `.env`, `docker compose` (`-e TCM_APP_MODE=development`) albo dodatkowy plik Compose (`tcm/compose.dev.yaml`). Nieprawidłowa wartość spowoduje przerwanie startu kontenera.
 
 W kontenerach stosuj `tcm/compose.yaml`, który uruchamia usługę FastAPI i reverse proxy NGINX z TLS/mTLS.
+
+## Formatowanie i linting
+
+### Python
+
+Zainstaluj zależności deweloperskie: `pip install -r requirements-dev.txt -c constraints.txt`.
+
+* Formatowanie: `black tcm`
+* Sortowanie importów: `isort tcm`
+* Linting: `flake8 tcm`
+
+### Szablony i zasoby statyczne
+
+Zainstaluj narzędzia Node: `npm install`.
+
+* Sprawdzenie formatowania: `npm run lint`
+* Formatowanie: `npm run format`
+
+Prettier korzysta z pluginu `prettier-plugin-jinja-template`, dzięki czemu formatuje pliki Jinja2 (`*.html`, `*.jinja`, `*.j2`).

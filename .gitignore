@@ -4,3 +4,9 @@
 *.ipr
 tcm/secrets/
 .env
+.venv/
+venv/
+__pycache__/
+node_modules/
+.pytest_cache/
+.mypy_cache/
