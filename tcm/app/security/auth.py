@@ -20,6 +20,7 @@ class UserSession:
     role: str
 # TODO dodać powiadomienia gdy użytkownik się zalogował i wylogował
 # TODO zweryfikować jak działa logowanie
+# TODO nagłówki bezpieczeństwa: Nagłówki bezpieczeństwa (CSP, HSTS w HTTPs), Secure i SameSite
 
 class AuthManager:
     def __init__(self, secret_key: str) -> None:
