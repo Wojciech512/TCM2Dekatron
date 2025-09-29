@@ -7,7 +7,6 @@ from threading import Lock
 from time import time
 from typing import Dict, Optional
 
-
 LOGICAL_OUTPUTS = [
     "alarm",
     "klimatyzacja",
@@ -30,7 +29,9 @@ class SensorSnapshot:
 class RuntimeState:
     inputs: Dict[str, bool] = field(default_factory=dict)
     sensors: SensorSnapshot = field(default_factory=SensorSnapshot)
-    outputs: Dict[str, bool] = field(default_factory=lambda: {name: False for name in LOGICAL_OUTPUTS})
+    outputs: Dict[str, bool] = field(
+        default_factory=lambda: {name: False for name in LOGICAL_OUTPUTS}
+    )
     alarm_reason: Optional[str] = None
     buzzer_muted: bool = False
     strike_active_until: Optional[float] = None
@@ -103,4 +104,3 @@ class StateContainer:
 
 
 GLOBAL_STATE = StateContainer()
-

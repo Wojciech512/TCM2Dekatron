@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from threading import Lock
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List
 
 try:
     import RPi.GPIO as GPIO  # type: ignore
@@ -118,9 +118,13 @@ class HardwareInterface:
     def _flush_outputs(self) -> None:
         if spidev is None:
             return
-        relay_byte = self._encode_outputs(self._relay_state, self.gpio_map.relays_active_low, RELAY_PIN_MAP)
+        relay_byte = self._encode_outputs(
+            self._relay_state, self.gpio_map.relays_active_low, RELAY_PIN_MAP
+        )
         transistor_byte = self._encode_outputs(
-            self._transistor_state, self.gpio_map.transistors_active_low, TRANSISTOR_PIN_MAP
+            self._transistor_state,
+            self.gpio_map.transistors_active_low,
+            TRANSISTOR_PIN_MAP,
         )
         self._write_register(OLATA, relay_byte)
         self._write_register(OLATB, transistor_byte)
@@ -132,7 +136,9 @@ class HardwareInterface:
 
     # ------------------------------------------------------------------
     @staticmethod
-    def _encode_outputs(mapping: Dict[str, bool], active_low: bool, pin_map: Dict[str, int]) -> int:
+    def _encode_outputs(
+        mapping: Dict[str, bool], active_low: bool, pin_map: Dict[str, int]
+    ) -> int:
         value = 0
         for name, pin in pin_map.items():
             level = mapping.get(name, False)
@@ -143,12 +149,15 @@ class HardwareInterface:
         return value
 
 
-def build_gpio_map(relay_map: Dict[str, List[str]], relay_active_low: bool,
-                   transistor_map: Dict[str, List[str]], transistor_active_low: bool) -> GPIOMap:
+def build_gpio_map(
+    relay_map: Dict[str, List[str]],
+    relay_active_low: bool,
+    transistor_map: Dict[str, List[str]],
+    transistor_active_low: bool,
+) -> GPIOMap:
     return GPIOMap(
         relays=relay_map,
         transistors=transistor_map,
         relays_active_low=relay_active_low,
         transistors_active_low=transistor_active_low,
     )
-

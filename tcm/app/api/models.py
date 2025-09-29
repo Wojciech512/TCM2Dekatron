@@ -40,4 +40,3 @@ class StrikeTriggerResponse(BaseModel):
     triggered: bool
     strike: str
     active_until: Optional[float]
-

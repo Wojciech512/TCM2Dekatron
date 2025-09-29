@@ -9,7 +9,6 @@ from typing import Callable, Dict, Optional
 from fastapi import Depends, HTTPException, Request, status
 from itsdangerous import URLSafeSerializer
 
-
 SESSION_USER_KEY = "tcm_user"
 SESSION_CSRF_KEY = "tcm_csrf"
 
@@ -18,9 +17,12 @@ SESSION_CSRF_KEY = "tcm_csrf"
 class UserSession:
     username: str
     role: str
+
+
 # TODO dodać powiadomienia gdy użytkownik się zalogował i wylogował
 # TODO zweryfikować jak działa logowanie
 # TODO nagłówki bezpieczeństwa: Nagłówki bezpieczeństwa (CSP, HSTS w HTTPs), Secure i SameSite - Hasło + TOTP — bardzo dobre i proste offline
+
 
 class AuthManager:
     def __init__(self, secret_key: str) -> None:
@@ -52,14 +54,19 @@ def get_current_user(request: Request) -> Optional[UserSession]:
 def require_role(role: str) -> Callable[[UserSession], UserSession]:
     def dependency(user: UserSession = Depends(get_authenticated_user)) -> UserSession:
         if user.role not in {role, "serwis"} and role != "operator":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
+            )
         return user
 
     return dependency
 
 
-def get_authenticated_user(user: Optional[UserSession] = Depends(get_current_user)) -> UserSession:
+def get_authenticated_user(
+    user: Optional[UserSession] = Depends(get_current_user),
+) -> UserSession:
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
     return user
-

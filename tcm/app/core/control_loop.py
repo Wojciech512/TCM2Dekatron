@@ -8,11 +8,11 @@ import time
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional, Tuple
 
+from ..services.logging import EventLogger
 from .config import AppConfig
 from .hardware import HardwareInterface
 from .sensors import read_dht11, read_ds18b20
 from .state import GLOBAL_STATE, SensorSnapshot
-from ..services.logging import EventLogger
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +24,9 @@ class StrikeConfig:
 
 
 class ControlLoop:
-    def __init__(self, config: AppConfig, hardware: HardwareInterface, logger: EventLogger) -> None:
+    def __init__(
+        self, config: AppConfig, hardware: HardwareInterface, logger: EventLogger
+    ) -> None:
         self.config = config
         self.hardware = hardware
         self.logger = logger
@@ -37,7 +39,9 @@ class ControlLoop:
         self._flood_last_change: Dict[str, float] = {}
         current_state = GLOBAL_STATE.read()
         self._output_keys = list(current_state.outputs.keys())
-        self._last_output_state: Dict[str, bool] = {key: current_state.outputs[key] for key in self._output_keys}
+        self._last_output_state: Dict[str, bool] = {
+            key: current_state.outputs[key] for key in self._output_keys
+        }
         self._strike_until: Optional[float] = None
 
     # ------------------------------------------------------------------
@@ -78,7 +82,9 @@ class ControlLoop:
             await asyncio.sleep(interval)
 
     # ------------------------------------------------------------------
-    async def _read_inputs(self, door_channels: Iterable[str], flood_channels: Iterable[str]) -> None:
+    async def _read_inputs(
+        self, door_channels: Iterable[str], flood_channels: Iterable[str]
+    ) -> None:
         states = self.hardware.read_inputs([*door_channels, *flood_channels])
         door_open_is_high = self.config.inputs.polarities.door_open_is_high
         flood_active_is_low = self.config.inputs.polarities.flood_active_is_low
@@ -96,7 +102,11 @@ class ControlLoop:
             if pending and pending[0] == door_open:
                 if now - pending[1] >= debounce_threshold:
                     if prev != door_open:
-                        self.logger.log("INPUT", "Door state changed", {"channel": channel, "open": door_open})
+                        self.logger.log(
+                            "INPUT",
+                            "Door state changed",
+                            {"channel": channel, "open": door_open},
+                        )
                     self._door_state[channel] = door_open
                     self._door_pending.pop(channel, None)
             elif prev != door_open:
@@ -109,7 +119,11 @@ class ControlLoop:
             prev = self._flood_state.get(channel)
             last_change = self._flood_last_change.get(channel, 0.0)
             if prev != flooded and (now - last_change) >= anti_flap:
-                self.logger.log("INPUT", "Flood state changed", {"channel": channel, "flood": flooded})
+                self.logger.log(
+                    "INPUT",
+                    "Flood state changed",
+                    {"channel": channel, "flood": flooded},
+                )
                 self._flood_state[channel] = flooded
                 self._flood_last_change[channel] = now
             flood_events[channel] = self._flood_state.get(channel, False)
@@ -151,18 +165,27 @@ class ControlLoop:
         if not self.config.sensors.dht11.enabled:
             return SensorSnapshot()
 
-        reading = read_dht11(self.config.sensors.dht11.battery_pin, self.config.sensors.dht11.cabinet_pin)
+        reading = read_dht11(
+            self.config.sensors.dht11.battery_pin, self.config.sensors.dht11.cabinet_pin
+        )
         for error in reading.errors:
             self.logger.log("SENSOR", error, {})
         snapshot = reading.snapshot
         if self.config.sensors.ds18b20.enabled:
-            ds_data = read_ds18b20(str(self.config.sensors.ds18b20.bus_path), self.config.sensors.ds18b20.ids)
+            ds_data = read_ds18b20(
+                str(self.config.sensors.ds18b20.bus_path),
+                self.config.sensors.ds18b20.ids,
+            )
             for sensor_id, value in ds_data.items():
                 field_name = f"ds18b20_{sensor_id}"
-                self.logger.log("SENSOR", "DS18B20 reading", {"sensor": sensor_id, "value": value})
+                self.logger.log(
+                    "SENSOR", "DS18B20 reading", {"sensor": sensor_id, "value": value}
+                )
         return snapshot
 
-    def _automatic_logic(self, sensors: SensorSnapshot, doors_open: bool, flood_active: bool) -> Dict[str, bool]:
+    def _automatic_logic(
+        self, sensors: SensorSnapshot, doors_open: bool, flood_active: bool
+    ) -> Dict[str, bool]:
         outputs = {name: False for name in self._output_keys}
         thresholds = self.config.thresholds
 
@@ -178,12 +201,16 @@ class ControlLoop:
         temp_cab = sensors.temp_cab
 
         if temp_batt is None and temp_cab is None:
-            self.logger.log("SENSOR", "Missing temperature data - entering safe mode", {})
+            self.logger.log(
+                "SENSOR", "Missing temperature data - entering safe mode", {}
+            )
             return outputs
 
-        temperature = max(filter(lambda x: x is not None, [temp_batt, temp_cab])) if any(
-            t is not None for t in [temp_batt, temp_cab]
-        ) else None
+        temperature = (
+            max(filter(lambda x: x is not None, [temp_batt, temp_cab]))
+            if any(t is not None for t in [temp_batt, temp_cab])
+            else None
+        )
 
         if temperature is None:
             return outputs
@@ -214,6 +241,7 @@ class ControlLoop:
                 self.hardware.set_transistors(name, state)
             else:
                 self.hardware.set_relays(name, state)
-            self.logger.log("OUTPUT", "Output state changed", {"name": name, "state": state})
+            self.logger.log(
+                "OUTPUT", "Output state changed", {"name": name, "state": state}
+            )
             self._last_output_state[name] = state
-

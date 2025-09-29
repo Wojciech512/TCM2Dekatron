@@ -171,4 +171,3 @@ def deep_update(original: Dict[str, Any], new_values: Dict[str, Any]) -> Dict[st
         else:
             result[key] = value
     return result
-

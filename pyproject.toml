@@ -2,9 +2,7 @@
 line-length = 88
 target-version = ["py311"]
 include = "\\.pyi?$"
-exclude = [
-  "/(\.git|\.mypy_cache|\.pytest_cache|\.venv|venv|build|dist|node_modules)/",
-]
+exclude = "/(\\.git|\\.mypy_cache|\\.pytest_cache|\\.venv|venv|build|dist|node_modules)/"
 
 [tool.flake8]
 max-line-length = 88

@@ -24,4 +24,3 @@ def iter_rows(cursor: sqlite3.Cursor) -> Iterator[sqlite3.Row]:
     while row is not None:
         yield row
         row = cursor.fetchone()
-

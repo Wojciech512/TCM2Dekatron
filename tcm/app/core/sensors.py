@@ -74,4 +74,3 @@ def read_ds18b20(bus_path: str, sensor_ids: List[str]) -> Dict[str, Optional[flo
         readings[sensor_id] = temp_c
 
     return readings
-

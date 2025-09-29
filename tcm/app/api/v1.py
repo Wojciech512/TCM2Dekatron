@@ -9,8 +9,13 @@ from slowapi.util import get_remote_address
 from ..core.state import GLOBAL_STATE
 from ..security.auth import get_authenticated_user, require_role
 from ..services.strike import StrikeService
-from .models import ManualModeModel, OutputUpdateModel, RuntimeStateModel, SensorModel, StrikeTriggerResponse
-
+from .models import (
+    ManualModeModel,
+    OutputUpdateModel,
+    RuntimeStateModel,
+    SensorModel,
+    StrikeTriggerResponse,
+)
 
 limiter: Limiter = Limiter(key_func=get_remote_address)
 
@@ -28,14 +33,18 @@ def get_strike_service(request: Request) -> StrikeService:
 
 @router.get("/inputs")
 @limiter.limit("120/minute")
-def list_inputs(request: Request, user=Depends(get_authenticated_user)) -> dict:  # noqa: ARG001
+def list_inputs(
+    request: Request, user=Depends(get_authenticated_user)
+) -> dict:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return runtime.inputs
 
 
 @router.get("/outputs")
 @limiter.limit("120/minute")
-def list_outputs(request: Request, user=Depends(get_authenticated_user)) -> dict:  # noqa: ARG001
+def list_outputs(
+    request: Request, user=Depends(get_authenticated_user)
+) -> dict:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return runtime.outputs
 
@@ -56,7 +65,9 @@ def set_output(
 
 @router.get("/sensors")
 @limiter.limit("120/minute")
-def get_sensors(request: Request, user=Depends(get_authenticated_user)) -> SensorModel:  # noqa: ARG001
+def get_sensors(
+    request: Request, user=Depends(get_authenticated_user)
+) -> SensorModel:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return SensorModel(**runtime.sensors.__dict__)
 
@@ -84,5 +95,6 @@ def trigger_strike(
     if not success:
         raise HTTPException(status_code=404, detail="Strike not configured")
     runtime = GLOBAL_STATE.read()
-    return StrikeTriggerResponse(triggered=True, strike=strike_id, active_until=runtime.strike_active_until)
-
+    return StrikeTriggerResponse(
+        triggered=True, strike=strike_id, active_until=runtime.strike_active_until
+    )

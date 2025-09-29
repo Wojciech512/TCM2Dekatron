@@ -1,32 +1,40 @@
 """FastAPI application factory for the TCM controller."""
+
 # Konfiguracja narzędzi formatowania i lintowania znajduje się w plikach konfiguracyjnych projektu.
 # TODO napisać testy jednostkowe
 # TODO jakie zabezpieczenia/funkcjonalności stosuje się do aplikacji na rasberry pi które mają bardzo długo działać bez aktualizacji
 # TODO czy przechowywanie sekretów w formie pliku tekstowego to dobry pomysł?
 # TODO naprawić pobieranie logów w pdf
+# TODO na widokach nie ma guardow jeżeli użytkownik nie jest zalogowany to ma dostęp do wszystkich widoków
+#TODO pojawia się błąd niepoprawnego tokenu csfr
 from __future__ import annotations
 
-import os
 import asyncio
 import contextlib
 import logging
 import math
+import os
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
 from pathlib import Path
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, Response
+from fastapi.exception_handlers import (
+    http_exception_handler as fastapi_http_exception_handler,
+)
+from fastapi.responses import (
+    HTMLResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.exception_handlers import http_exception_handler as fastapi_http_exception_handler
+from fontTools.ttLib import TTLibError
+from fpdf import FPDF
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
-
-from fpdf import FPDF
-from fontTools.ttLib import TTLibError
 
 from .api import state as state_router
 from .api import v1 as v1_router
@@ -34,7 +42,7 @@ from .core.config import AppConfig, load_secret_file
 from .core.control_loop import ControlLoop
 from .core.hardware import HardwareInterface, build_gpio_map
 from .core.state import GLOBAL_STATE
-from .security.auth import AuthManager, SESSION_USER_KEY, UserSession, get_current_user
+from .security.auth import SESSION_USER_KEY, AuthManager, UserSession, get_current_user
 from .services.logging import EVENT_TYPES, EventLogger
 from .services.strike import StrikeService
 from .services.users import UserStore
@@ -55,7 +63,9 @@ def load_secret(key: str, file_path: Optional[Path]) -> Optional[str]:
 
 
 def create_app(config_path: Path | None = None) -> FastAPI:
-    config_path = config_path or Path(__file__).resolve().parents[1] / "config" / "app.yaml"
+    config_path = (
+        config_path or Path(__file__).resolve().parents[1] / "config" / "app.yaml"
+    )
     config = AppConfig.from_yaml(config_path)
 
     secret_key = load_secret("TCM_SECRET_KEY", config.secrets.secret_key_file)
@@ -117,8 +127,17 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     )
     hardware = HardwareInterface(gpio_map)
     control_loop = ControlLoop(config, hardware, event_logger)
-    strike_assignments = {name: value.transistor for name, value in config.strike.assignments.items() if value.transistor}
-    strike_service = StrikeService(hardware, event_logger, config.strike.default_duration_seconds, strike_assignments)
+    strike_assignments = {
+        name: value.transistor
+        for name, value in config.strike.assignments.items()
+        if value.transistor
+    }
+    strike_service = StrikeService(
+        hardware,
+        event_logger,
+        config.strike.default_duration_seconds,
+        strike_assignments,
+    )
 
     app.state.config = config
     app.state.logger = event_logger
@@ -137,7 +156,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     TOAST_SESSION_KEY = "_toast_message"
 
-    def _store_toast(request: Request, message: str, level: str = "error", duration: int = 4000) -> None:
+    def _store_toast(
+        request: Request, message: str, level: str = "error", duration: int = 4000
+    ) -> None:
         request.session[TOAST_SESSION_KEY] = {
             "message": message,
             "type": level,
@@ -197,7 +218,11 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         return templates.TemplateResponse(
             "429.html",
-            {"request": request, "detail": "Too many requests", "toast": _pop_toast(request)},
+            {
+                "request": request,
+                "detail": "Too many requests",
+                "toast": _pop_toast(request),
+            },
             status_code=429,
         )
 
@@ -207,9 +232,15 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         expects_html = "text/html" in accept_header or "*/*" in accept_header
         if expects_html and exc.status_code in {401, 403}:
             user = get_current_user(request)
-            message = _localize_detail(exc.status_code, exc.detail if isinstance(exc.detail, str) else None)
+            message = _localize_detail(
+                exc.status_code, exc.detail if isinstance(exc.detail, str) else None
+            )
             _store_toast(request, message, level="error")
-            target = request.url_for("login_get") if not user else request.url_for("dashboard")
+            target = (
+                request.url_for("login_get")
+                if not user
+                else request.url_for("dashboard")
+            )
             return RedirectResponse(url=target, status_code=303)
         return await fastapi_http_exception_handler(request, exc)
 
@@ -217,7 +248,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     # Web views
     # ------------------------------------------------------------------
     @app.get("/", response_class=HTMLResponse)
-    async def index(request: Request, user: Optional[UserSession] = Depends(get_current_user)):
+    async def index(
+        request: Request, user: Optional[UserSession] = Depends(get_current_user)
+    ):
         if not user:
             csrf = app.state.auth_manager.issue_csrf(request.session)
             return templates.TemplateResponse(
@@ -247,7 +280,12 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         )
 
     @app.post("/login")
-    async def login_post(request: Request, username: str = Form(...), password: str = Form(...), csrf_token: str = Form(...)):
+    async def login_post(
+        request: Request,
+        username: str = Form(...),
+        password: str = Form(...),
+        csrf_token: str = Form(...),
+    ):
         if not app.state.auth_manager.verify_csrf(request.session, csrf_token):
             raise HTTPException(status_code=400, detail="Invalid CSRF token")
         role = user_store.verify_credentials(username, password)
@@ -279,19 +317,25 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
     @app.get("/dashboard", response_class=HTMLResponse)
-    async def dashboard(request: Request, user: UserSession = Depends(get_current_user)):
+    async def dashboard(
+        request: Request, user: UserSession = Depends(get_current_user)
+    ):
         context = _panel_context(request)
         context["user"] = user
         return templates.TemplateResponse("dashboard.html", context)
 
     @app.get("/panel/operator", response_class=HTMLResponse)
-    async def panel_operator(request: Request, user: UserSession = Depends(get_current_user)):
+    async def panel_operator(
+        request: Request, user: UserSession = Depends(get_current_user)
+    ):
         context = _panel_context(request)
         context["user"] = user
         return templates.TemplateResponse("panel_operator.html", context)
 
     @app.get("/panel/technik", response_class=HTMLResponse)
-    async def panel_technik(request: Request, user: UserSession = Depends(get_current_user)):
+    async def panel_technik(
+        request: Request, user: UserSession = Depends(get_current_user)
+    ):
         if user.role not in {"technik", "serwis"}:
             raise HTTPException(status_code=403, detail="Insufficient role")
         context = _panel_context(request)
@@ -299,7 +343,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         return templates.TemplateResponse("panel_technik.html", context)
 
     @app.get("/panel/serwis", response_class=HTMLResponse)
-    async def panel_serwis(request: Request, user: UserSession = Depends(get_current_user)):
+    async def panel_serwis(
+        request: Request, user: UserSession = Depends(get_current_user)
+    ):
         if user.role != "serwis":
             raise HTTPException(status_code=403, detail="Insufficient role")
         if config.ui.panels.serwis.require_dip_high:
@@ -328,7 +374,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         total_pages = max(1, math.ceil(total_events / per_page)) if total_events else 1
         page = min(page, total_pages)
         offset = (page - 1) * per_page
-        records = event_logger.list_events(limit=per_page, offset=offset, event_type=event_type)
+        records = event_logger.list_events(
+            limit=per_page, offset=offset, event_type=event_type
+        )
         tzinfo = getattr(app.state, "logs_timezone", timezone.utc)
 
         def _format_payload(payload: Dict[str, object]) -> List[Dict[str, str]]:
@@ -339,7 +387,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
         events = [
             {
-                "ts": datetime.fromtimestamp(record.ts, tzinfo).strftime("%Y-%m-%d %H:%M:%S"),
+                "ts": datetime.fromtimestamp(record.ts, tzinfo).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
                 "type": record.type,
                 "message": record.message,
                 "payload_items": _format_payload(record.payload),
@@ -368,7 +418,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         }
 
         return templates.TemplateResponse("logs.html", context)
-
+    # TODO usunąć FPDF i wykorzystać generator .csv (biblioteka musi mieć otwartą licencje)
     @app.get("/logs/export/pdf")
     async def logs_export_pdf(
         request: Request,
@@ -402,7 +452,12 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         pdf.set_font(font_name, "B", 14)
         pdf.cell(0, 10, "Dziennik zdarzeń TCM", ln=1)
         pdf.set_font(font_name, "", 10)
-        pdf.cell(0, 8, f"Wygenerowano: {datetime.now(tzinfo).strftime('%Y-%m-%d %H:%M:%S')}", ln=1)
+        pdf.cell(
+            0,
+            8,
+            f"Wygenerowano: {datetime.now(tzinfo).strftime('%Y-%m-%d %H:%M:%S')}",
+            ln=1,
+        )
         if event_type:
             pdf.cell(0, 8, f"Filtr typu: {event_type}", ln=1)
         pdf.ln(2)
@@ -417,8 +472,12 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             event_type=event_type,
             order="asc",
         ):
-            timestamp = datetime.fromtimestamp(record.ts, tzinfo).strftime("%Y-%m-%d %H:%M:%S")
-            payload_text = ", ".join(f"{key}: {value}" for key, value in record.payload.items())
+            timestamp = datetime.fromtimestamp(record.ts, tzinfo).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            payload_text = ", ".join(
+                f"{key}: {value}" for key, value in record.payload.items()
+            )
             message_line = record.message
             if payload_text:
                 message_line = f"{message_line} ({payload_text})"
@@ -429,7 +488,9 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         pdf_bytes = pdf.output(dest="S").encode("latin1")
         filename = f"tcm_logs_{datetime.now(tzinfo).strftime('%Y%m%d_%H%M%S')}.pdf"
         headers = {"Content-Disposition": f"attachment; filename={filename}"}
-        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+        return Response(
+            content=pdf_bytes, media_type="application/pdf", headers=headers
+        )
 
     @app.get("/health", include_in_schema=False, response_class=PlainTextResponse)
     @limiter.exempt
@@ -438,5 +499,5 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     return app
 
-app = create_app()
 
+app = create_app()

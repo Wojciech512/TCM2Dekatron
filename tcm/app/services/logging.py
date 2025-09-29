@@ -13,7 +13,6 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from ..core.database import create_connection, iter_rows
 
-
 EVENT_TYPES = {"INPUT", "OUTPUT", "SENSOR", "CFG", "AUTH", "STRIKE"}
 
 
@@ -58,13 +57,17 @@ class EventLogger:
         self._conn.commit()
 
     # ------------------------------------------------------------------
-    def log(self, event_type: str, message: str, payload: Optional[Dict[str, object]] = None) -> None:
+    def log(
+        self, event_type: str, message: str, payload: Optional[Dict[str, object]] = None
+    ) -> None:
         if event_type not in EVENT_TYPES:
             raise ValueError(f"Unsupported event type {event_type}")
         payload = payload or {}
         payload_json = json.dumps(payload, ensure_ascii=False)
         if self.fernet and "payload_json" in self.encrypted_fields:
-            payload_json = self.fernet.encrypt(payload_json.encode("utf-8")).decode("utf-8")
+            payload_json = self.fernet.encrypt(payload_json.encode("utf-8")).decode(
+                "utf-8"
+            )
         with self._conn:
             if self.max_records:
                 cursor = self._conn.execute("SELECT COUNT(*) FROM events")
@@ -112,11 +115,16 @@ class EventLogger:
 
     # ------------------------------------------------------------------
     def iter_events(
-        self, chunk_size: int = 500, event_type: Optional[str] = None, order: str = "desc"
+        self,
+        chunk_size: int = 500,
+        event_type: Optional[str] = None,
+        order: str = "desc",
     ) -> Iterator[EventRecord]:
         offset = 0
         while True:
-            batch = self.list_events(limit=chunk_size, offset=offset, event_type=event_type, order=order)
+            batch = self.list_events(
+                limit=chunk_size, offset=offset, event_type=event_type, order=order
+            )
             if not batch:
                 break
             for record in batch:
@@ -147,9 +155,12 @@ class EventLogger:
         payload_json = row["payload_json"]
         if self.fernet and "payload_json" in self.encrypted_fields:
             try:
-                payload_json = self.fernet.decrypt(payload_json.encode("utf-8")).decode("utf-8")
+                payload_json = self.fernet.decrypt(payload_json.encode("utf-8")).decode(
+                    "utf-8"
+                )
             except InvalidToken:
                 payload_json = "{}"
         payload = json.loads(payload_json)
-        return EventRecord(ts=row["ts"], type=row["type"], message=row["message"], payload=payload)
-
+        return EventRecord(
+            ts=row["ts"], type=row["type"], message=row["message"], payload=payload
+        )

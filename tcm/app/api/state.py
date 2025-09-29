@@ -16,7 +16,9 @@ router = APIRouter(prefix="/api", tags=["state"])
 
 @router.get("/state", response_model=RuntimeStateModel)
 @limiter.limit("60/minute")
-def get_state(request: Request, user=Depends(get_authenticated_user)) -> RuntimeStateModel:  # noqa: ARG001
+def get_state(
+    request: Request, user=Depends(get_authenticated_user)
+) -> RuntimeStateModel:  # noqa: ARG001
     runtime = GLOBAL_STATE.read()
     return RuntimeStateModel(
         inputs=runtime.inputs,
@@ -30,4 +32,3 @@ def get_state(request: Request, user=Depends(get_authenticated_user)) -> Runtime
         manual_mode=runtime.manual_mode,
         manual_overrides=runtime.manual_overrides,
     )
-

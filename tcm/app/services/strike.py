@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional
-
 from threading import Thread
+from typing import Dict, Optional
 
 from ..core.hardware import HardwareInterface
 from ..core.state import GLOBAL_STATE
@@ -20,8 +19,13 @@ class StrikeDefinition:
 
 
 class StrikeService:
-    def __init__(self, hardware: HardwareInterface, logger: EventLogger,
-                 default_duration: float, assignments: Dict[str, Optional[str]]) -> None:
+    def __init__(
+        self,
+        hardware: HardwareInterface,
+        logger: EventLogger,
+        default_duration: float,
+        assignments: Dict[str, Optional[str]],
+    ) -> None:
         self.hardware = hardware
         self.logger = logger
         self.default_duration = default_duration
@@ -38,7 +42,9 @@ class StrikeService:
                 self.hardware.set_transistor_channel(transistor, False)
                 self.hardware.set_transistor_channel(transistor, True)
             except KeyError:
-                self.logger.log("STRIKE", "Strike transistor unavailable", {"strike": strike_id})
+                self.logger.log(
+                    "STRIKE", "Strike transistor unavailable", {"strike": strike_id}
+                )
                 return
             GLOBAL_STATE.update(strike_active_until=time.time() + duration)
             self.logger.log(
@@ -53,4 +59,3 @@ class StrikeService:
 
         Thread(target=worker, daemon=True).start()
         return True
-
