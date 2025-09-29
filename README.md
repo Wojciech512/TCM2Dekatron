@@ -13,20 +13,16 @@ Repozytorium zawiera kompletną implementację aplikacji TCM 2.0 w FastAPI z Jin
 
 ## Uruchomienie lokalne (tryb developerski)
 
-### Opcja A – kontener Docker z trybem developerskim
+### Kontener Docker z trybem developerskim
 1. Zbuduj obrazy: `docker compose -f tcm/compose.yaml build`.
 2. Uruchom środowisko z autoreloadem: `docker compose -f tcm/compose.yaml -f tcm/compose.dev.yaml up app`.
    - Plik `tcm/compose.dev.yaml` ustawia `TCM_APP_MODE=development` i montuje katalog `tcm/app` z repozytorium, więc każda zmiana kodu lub szablonów jest przeładowywana w kontenerze.
    - Domyślnie aplikacja startuje w trybie produkcyjnym; tryb developerski trzeba świadomie włączyć poprzez dodatkowy plik Compose lub ustawienie `TCM_APP_MODE=development`.
 
-### Opcja B – środowisko wirtualne (bez Dockera)
-1. Zainstaluj zależności: `pip install -r requirements.txt`.
-2. Ustaw zmienne środowiskowe lub pliki secrets (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`):
+Ustaw zmienne środowiskowe lub pliki secrets (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`):
     - generowanie: `TCM_ADMIN_HASH=...` **[Windows and Linux tested:]:** `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))""`
     - generowanie: `TCM_FERNET_KEY=...` **[Windows tested:]:** `python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
     - generowanie: `TCM_SECRET_KEY=...` **[Windows tested:]:** `python -c "import secrets; print(secrets.token_hex(64))"`
-4. Uruchom aplikację: `uvicorn tcm.app.main:app --reload`.
-4. Interfejs WWW będzie dostępny pod `https://localhost:8000` (za reverse proxy w produkcji).
 
 ## Tryb aplikacji sterowany zmienną środowiskową
 

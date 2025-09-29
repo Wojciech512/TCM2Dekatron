@@ -2,6 +2,15 @@ version: "3.9"
 
 services:
   app:
+    build:
+      context: ..
+      dockerfile: tcm/docker/app.Dockerfile
+    image: tcm-app:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
     environment:
       TCM_APP_MODE: development
       UVICORN_LOG_LEVEL: debug
@@ -9,3 +18,30 @@ services:
       - ./config:/opt/tcm/tcm/config:ro
       - ../tcm/app:/opt/tcm/tcm/app:delegated
       - tcm_app_data:/var/lib/tcm
+    #    devices:
+    #      - /dev/spidev0.0
+    #      - /dev/spidev0.1
+    privileged: false
+    cap_add:
+      - SYS_TIME
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    secrets:
+      - app_secret_key
+      - app_fernet_key
+      - admin_bootstrap_hash
+
+secrets:
+  app_secret_key:
+    file: ./secrets/app_secret_key
+  app_fernet_key:
+    file: ./secrets/app_fernet_key
+  admin_bootstrap_hash:
+    file: ./secrets/admin_bootstrap_hash
+
+volumes:
+  tcm_app_data:
