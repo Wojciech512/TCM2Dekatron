@@ -1,43 +1,135 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<section>
-    <h2>Wejścia</h2>
-    <table>
-        <tr><th>Kanał</th><th>Stan</th></tr>
-        {% for channel, value in state.inputs.items() %}
-        <tr>
-            <td>{{ channel }}</td>
-            <td class="{{ 'on' if value else 'off' }}">{{ 'AKTYWNE' if value else 'spokojnie' }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</section>
+{% set sensors = state.sensors %}
+{% set inputs = state.inputs %}
+{% set outputs = state.outputs %}
+{% set door_channels = config.inputs.door_channels %}
+{% set flood_channels = config.inputs.flood_channels %}
+<div class="section">
+  <h2>Dane czujników</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Bateria — temperatura</div><div class="value"><span data-sensor="temp_batt">{{ sensors.temp_batt if sensors.temp_batt is not none else '—' }}</span> °C</div></div>
+    <div class="kpi"><div class="label">Bateria — wilgotność</div><div class="value"><span data-sensor="hum_batt">{{ sensors.hum_batt if sensors.hum_batt is not none else '—' }}</span> %</div></div>
+    <div class="kpi"><div class="label">Szafa — temperatura</div><div class="value"><span data-sensor="temp_cab">{{ sensors.temp_cab if sensors.temp_cab is not none else '—' }}</span> °C</div></div>
+    <div class="kpi"><div class="label">Szafa — wilgotność</div><div class="value"><span data-sensor="hum_cab">{{ sensors.hum_cab if sensors.hum_cab is not none else '—' }}</span> %</div></div>
+  </div>
+</div>
 
-<section>
-    <h2>Wyjścia logiczne</h2>
-    <table>
-        <tr><th>Nazwa</th><th>Stan</th></tr>
-        {% for name, value in state.outputs.items() %}
-        <tr>
-            <td>{{ name }}</td>
-            <td class="{{ 'on' if value else 'off' }}">{{ 'ON' if value else 'OFF' }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</section>
+<div class="row">
+  <div class="col">
+    <div class="section">
+      <h2>Wejścia</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th>Kanał</th><th>Stan</th></tr></thead>
+          <tbody>
+            {% for channel in door_channels %}
+              {% set value = inputs.get(channel, False) %}
+              <tr>
+                <th>Drzwi {{ channel }}</th>
+                <td><span class="pill {{ 'bad' if value else 'ok' }}" data-input="{{ channel }}">{{ 'OPEN' if value else 'CLOSED' }}</span></td>
+              </tr>
+            {% endfor %}
+            {% for channel in flood_channels %}
+              {% set value = inputs.get(channel, False) %}
+              <tr>
+                <th>Zalanie {{ channel }}</th>
+                <td><span class="pill {{ 'bad' if value else 'ok' }}" data-input="{{ channel }}">{{ 'FLOOD' if value else 'OK' }}</span></td>
+              </tr>
+            {% endfor %}
+            {% if not door_channels and not flood_channels %}
+              <tr><td colspan="2"><i>Brak skonfigurowanych wejść.</i></td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-<section>
-    <h2>Czujniki</h2>
-    <ul>
-        <li>Bateria: {{ state.sensors.temp_batt }} °C / {{ state.sensors.hum_batt }} %</li>
-        <li>Szafa: {{ state.sensors.temp_cab }} °C / {{ state.sensors.hum_cab }} %</li>
-    </ul>
-</section>
+  <div class="col">
+    <div class="section">
+      <h2>Wyjścia logiczne</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th>Nazwa</th><th>Stan</th></tr></thead>
+          <tbody>
+            {% for name, value in outputs.items() %}
+              <tr>
+                <th>{{ name|replace('_', ' ')|upper }}</th>
+                <td><span class="pill {{ 'on' if value else 'off' }}" data-output="{{ name }}">{{ 'ON' if value else 'OFF' }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="section">
+        <div class="card">
+          <p style="margin:0">Alarm: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
+          <p style="margin:6px 0 0 0">Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
+          <p style="margin:6px 0 0 0">Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<section>
-    <h2>Status alarmu</h2>
-    <p>Powód: {{ state.alarm_reason or 'brak' }}</p>
-    <p>Strike aktywny do: {{ state.strike_active_until or 'nieaktywny' }}</p>
-</section>
+{% if state.error %}
+  <div class="flash error">{{ state.error }}</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  async function refreshState(){
+    try{
+      const response = await fetch("{{ request.url_for('get_state') }}", {cache: 'no-store'});
+      if(!response.ok){
+        return;
+      }
+      const data = await response.json();
+      if(data.inputs){
+        Object.entries(data.inputs).forEach(([channel, value]) => {
+          const el = document.querySelector(`[data-input="${channel}"]`);
+          if(!el){
+            return;
+          }
+          const isDoor = {{ door_channels|tojson }}.includes(channel);
+          if(isDoor){
+            el.textContent = value ? 'OPEN' : 'CLOSED';
+            el.classList.toggle('bad', !!value);
+            el.classList.toggle('ok', !value);
+          }else{
+            el.textContent = value ? 'FLOOD' : 'OK';
+            el.classList.toggle('bad', !!value);
+            el.classList.toggle('ok', !value);
+          }
+        });
+      }
+      if(data.outputs){
+        Object.entries(data.outputs).forEach(([name, active]) => {
+          const el = document.querySelector(`[data-output="${name}"]`);
+          if(!el){
+            return;
+          }
+          el.textContent = active ? 'ON' : 'OFF';
+          el.classList.toggle('on', !!active);
+          el.classList.toggle('off', !active);
+        });
+      }
+      if(data.sensors){
+        Object.entries(data.sensors).forEach(([name, value]) => {
+          const el = document.querySelector(`[data-sensor="${name}"]`);
+          if(el){
+            el.textContent = (value === null || value === undefined) ? '—' : value;
+          }
+        });
+      }
+    }catch(e){
+      // ignore transient errors
+    }
+  }
+  setInterval(refreshState, 5000);
+</script>
 {% endblock %}

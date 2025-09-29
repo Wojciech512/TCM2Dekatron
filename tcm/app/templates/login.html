@@ -1,17 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Logowanie{% endblock %}
 {% block content %}
-<section class="login">
-    <h2>Zaloguj się</h2>
-    <form method="post" action="/login">
-        <label>Użytkownik
-            <input type="text" name="username" required autofocus>
-        </label>
-        <label>Hasło
-            <input type="password" name="password" required>
-        </label>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit">Zaloguj</button>
-    </form>
-</section>
+<div class="card" style="max-width:420px;margin:60px auto">
+  <h2>Zaloguj się</h2>
+  <p style="margin-top:-8px;color:#9fb1e3;font-size:13px">Podaj dane konta administratora, operatora lub technika.</p>
+  <form method="post" action="{{ request.url_for('login_post') }}">
+    <div class="grid">
+      <label>Użytkownik
+        <input type="text" name="username" required autofocus>
+      </label>
+      <label>Hasło
+        <input type="password" name="password" required>
+      </label>
+    </div>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button type="submit" class="btn">Zaloguj</button>
+    </div>
+  </form>
+</div>
 {% endblock %}
