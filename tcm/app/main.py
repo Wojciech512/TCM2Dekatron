@@ -1,8 +1,8 @@
 """FastAPI application factory for the TCM controller."""
 # Konfiguracja narzędzi formatowania i lintowania znajduje się w plikach konfiguracyjnych projektu.
 # TODO napisać testy jednostkowe
-# TODO jakie zabezpieczenia stosuje się do aplikacji na rasberry pi które mają bardzo długo działać bez aktualizacji
-# TODO jeżeli nie ma danych to nie można nic podstawiać żadnych wartości
+# TODO jakie zabezpieczenia/funkcjonalności stosuje się do aplikacji na rasberry pi które mają bardzo długo działać bez aktualizacji
+# TODO czy przechowywanie sekretów w formie pliku tekstowego to dobry pomysł?
 from __future__ import annotations
 
 import os

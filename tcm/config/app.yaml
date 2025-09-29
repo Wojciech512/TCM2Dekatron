@@ -94,7 +94,7 @@ ui:
 
 logging:
   sqlite_path: "/var/lib/tcm/tcm.db"
-  retention_days: 365
+  retention_days: 30
   encrypted_fields:
     - payload_json
   export_chunk_size: 500
