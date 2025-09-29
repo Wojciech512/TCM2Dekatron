@@ -65,9 +65,9 @@
       </div>
       <div class="section">
         <div class="card">
-          <p style="margin:0">Alarm: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
-          <p style="margin:6px 0 0 0">Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
-          <p style="margin:6px 0 0 0">Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
+          <p>Alarm: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
+          <p>Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
+          <p>Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
         </div>
       </div>
     </div>

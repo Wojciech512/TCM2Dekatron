@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Limit zapytań{% endblock %}
 {% block content %}
-<div class="card" style="max-width:520px;margin:40px auto">
+<div class="card card--wide">
   <h2>Przekroczono limit zapytań</h2>
   <p>{{ detail }}</p>
-  <p style="margin-top:12px;color:#9fb1e3;font-size:13px">Poczekaj chwilę i spróbuj ponownie.</p>
+  <p class="card-note">Poczekaj chwilę i spróbuj ponownie.</p>
 </div>
 {% endblock %}

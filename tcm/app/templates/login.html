@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Logowanie{% endblock %}
 {% block content %}
-<div class="card" style="max-width:420px;margin:60px auto">
+<div class="card card--narrow">
   <h2>Zaloguj się</h2>
-  <p style="margin-top:-8px;color:#9fb1e3;font-size:13px">Podaj dane konta administratora, operatora lub technika.</p>
+  <p class="card-intro">Podaj dane konta administratora, operatora lub technika.</p>
   <form method="post" action="{{ request.url_for('login_post') }}">
     <div class="grid">
       <label>Użytkownik
@@ -14,7 +14,7 @@
       </label>
     </div>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+    <div class="form-actions">
       <button type="submit" class="btn">Zaloguj</button>
     </div>
   </form>

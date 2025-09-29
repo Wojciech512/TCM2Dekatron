@@ -20,8 +20,8 @@
     <div class="section">
       <h2>Tryb manualny</h2>
       <div class="card">
-        <p style="margin:0">Tryb manualny: <strong>{{ 'włączony' if state.manual_mode else 'wyłączony' }}</strong></p>
-        <table style="margin-top:12px">
+        <p>Tryb manualny: <strong>{{ 'włączony' if state.manual_mode else 'wyłączony' }}</strong></p>
+        <table class="table-spacing">
           <thead><tr><th>Wyjście</th><th>Stan wymuszony</th></tr></thead>
           <tbody>
             {% for name, value in state.manual_overrides.items() %}
@@ -58,7 +58,7 @@
     <div class="section">
       <h2>Polaryzacje wejść</h2>
       <div class="card">
-        <ul style="margin:0;padding-left:18px;line-height:1.6">
+        <ul class="list-plain">
           <li>Drzwi otwarte gdy {{ 'poziom wysoki' if config.inputs.polarities.door_open_is_high else 'poziom niski' }}</li>
           <li>Zalanie aktywne gdy {{ 'poziom niski' if config.inputs.polarities.flood_active_is_low else 'poziom wysoki' }}</li>
           <li>DIP w pozycji ON gdy {{ 'poziom wysoki' if config.inputs.polarities.dip_on_is_high else 'poziom niski' }}</li>

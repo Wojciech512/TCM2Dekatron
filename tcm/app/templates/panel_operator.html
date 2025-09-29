@@ -6,10 +6,10 @@
     <div class="section">
       <h2>Status alarmu</h2>
       <div class="card">
-        <p style="margin:0">Alarm aktywny: <strong>{{ 'tak' if state.alarm_reason else 'nie' }}</strong></p>
-        <p style="margin:6px 0 0 0">Powód: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
-        <p style="margin:6px 0 0 0">Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
-        <p style="margin:6px 0 0 0">Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
+        <p>Alarm aktywny: <strong>{{ 'tak' if state.alarm_reason else 'nie' }}</strong></p>
+        <p>Powód: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
+        <p>Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
+        <p>Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
       </div>
     </div>
   </div>
@@ -36,7 +36,7 @@
     {% if config.strike.assignments %}
       <div class="grid">
         {% for strike_id, strike in config.strike.assignments.items() %}
-          <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="strike-action">
             <strong>{{ strike_id|replace('_', ' ')|upper }}</strong>
             {% if strike.transistor %}
               <a class="btn" href="/api/v1/strike/{{ strike_id }}/trigger">Wyzwól ({{ strike.transistor }})</a>
