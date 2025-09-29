@@ -18,14 +18,16 @@ services:
       - ./config:/opt/tcm/tcm/config:ro
       - ../tcm/app:/opt/tcm/tcm/app:delegated
       - tcm_app_data:/var/lib/tcm
-    #    devices:
-    #      - /dev/spidev0.0
-    #      - /dev/spidev0.1
+#    devices:
+#      - /dev/spidev0.0
+#      - /dev/spidev0.1
     privileged: false
     cap_add:
       - SYS_TIME
+    networks:
+      - backend
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -42,6 +44,12 @@ secrets:
     file: ./secrets/app_fernet_key
   admin_bootstrap_hash:
     file: ./secrets/admin_bootstrap_hash
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
 
 volumes:
   tcm_app_data:

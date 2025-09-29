@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 import asyncio
 import contextlib
-import logging
-import secrets
 
 from pathlib import Path
 from typing import Dict, Optional
@@ -42,25 +40,13 @@ def load_secret(key: str, file_path: Optional[Path]) -> Optional[str]:
     return None
 
 
-def _app_mode() -> str:
-    return os.getenv("TCM_APP_MODE", "production").lower()
-
-
 def create_app(config_path: Path | None = None) -> FastAPI:
     config_path = config_path or Path(__file__).resolve().parents[1] / "config" / "app.yaml"
     config = AppConfig.from_yaml(config_path)
 
     secret_key = load_secret("TCM_SECRET_KEY", config.secrets.secret_key_file)
     if not secret_key:
-        mode = _app_mode()
-        if mode == "development":
-            secret_key = secrets.token_urlsafe(64)
-            logging.getLogger(__name__).warning(
-                "TCM_SECRET_KEY not provided; generated ephemeral development secret key. "
-                "Sessions will be reset on each reload."
-            )
-        else:
-            raise RuntimeError("Secret key not provided")
+        raise RuntimeError("Secret key not provided")
 
     fernet_key = load_secret("TCM_FERNET_KEY", config.secrets.fernet_key_file)
     admin_hash = load_secret("TCM_ADMIN_HASH", config.secrets.admin_hash_file)
