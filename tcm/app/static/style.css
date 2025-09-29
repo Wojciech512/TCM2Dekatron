@@ -103,3 +103,16 @@ a{color:inherit}
   header,footer{padding:16px}
   main{padding:16px}
 }
+.event-table tbody tr:hover{background:rgba(122,162,255,0.05)}
+.event-table td{vertical-align:top}
+.event-type-badge{background:#132861; color:#c7d8ff}
+.event-payload{display:flex; flex-wrap:wrap; gap:8px}
+.meta-chip{font-size:11px; background:#ffffff14}
+.muted{color:#9fb1e3}
+.card-header{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.card-actions{display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap}
+.filter-form{display:flex; align-items:flex-end}
+.pagination{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:18px}
+.pagination-info{font-size:13px; color:#9fb1e3}
+.pagination-controls{display:flex; gap:10px}
+.pagination-controls .btn{min-width:140px}

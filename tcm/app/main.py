@@ -5,17 +5,22 @@ from __future__ import annotations
 import os
 import asyncio
 import contextlib
+import math
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.exception_handlers import http_exception_handler as fastapi_http_exception_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
+
+from fpdf import FPDF
 
 from .api import state as state_router
 from .api import v1 as v1_router
@@ -24,7 +29,7 @@ from .core.control_loop import ControlLoop
 from .core.hardware import HardwareInterface, build_gpio_map
 from .core.state import GLOBAL_STATE
 from .security.auth import AuthManager, SESSION_USER_KEY, UserSession, get_current_user
-from .services.logging import EventLogger
+from .services.logging import EVENT_TYPES, EventLogger
 from .services.strike import StrikeService
 from .services.users import UserStore
 
@@ -53,10 +58,35 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     admin_hash = load_secret("TCM_ADMIN_HASH", config.secrets.admin_hash_file)
 
     db_path = Path(os.getenv("TCM_DB_PATH", str(config.logging.sqlite_path)))
-    event_logger = EventLogger(db_path, config.logging.encrypted_fields, fernet_key)
+
+    def _int_from_env(var_name: str, fallback: int) -> int:
+        raw = os.getenv(var_name)
+        if not raw:
+            return fallback
+        try:
+            value = int(raw)
+        except ValueError:
+            return fallback
+        return value if value > 0 else fallback
+
+    logs_page_size = _int_from_env("TCM_LOGS_PAGE_SIZE", config.logging.page_size)
+    logs_max_records = _int_from_env("TCM_LOGS_MAX_RECORDS", config.logging.max_records)
+
+    event_logger = EventLogger(
+        db_path,
+        config.logging.encrypted_fields,
+        fernet_key,
+        max_records=logs_max_records,
+    )
     user_store = UserStore(db_path)
     if admin_hash:
         user_store.create_user_with_hash("admin", admin_hash, "serwis")
+
+    try:
+        tz_name = config.metadata.timezone if config and config.metadata else None
+        tz = ZoneInfo(tz_name) if tz_name else timezone.utc
+    except ZoneInfoNotFoundError:
+        tz = timezone.utc
 
     app = FastAPI(title="TCM 2.0 Controller", version="2.0.0")
     app.add_middleware(
@@ -91,6 +121,8 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     app.state.templates = templates
     limiter = v1_router.limiter
     app.state.limiter = limiter
+    app.state.logs_page_size = logs_page_size
+    app.state.logs_timezone = tz
 
     app.include_router(state_router.router)
     app.include_router(v1_router.router)
@@ -133,6 +165,14 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         if hasattr(control_loop, "initialize"):
             await control_loop.initialize()
         app.state.control_task = asyncio.create_task(control_loop.start())
+        event_logger.log(
+            "CFG",
+            "System startup",
+            {
+                "fast_tick": config.loops.fast_tick_seconds,
+                "logic_tick": config.loops.logic_tick_seconds,
+            },
+        )
 
     @app.on_event("shutdown")
     async def shutdown_event() -> None:
@@ -143,6 +183,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
                 await task
         if hasattr(control_loop, "stop"):
             await control_loop.stop()
+        event_logger.log("CFG", "System shutdown", {})
 
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
@@ -260,6 +301,120 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         context = _panel_context(request)
         context["user"] = user
         return templates.TemplateResponse("panel_serwis.html", context)
+
+    @app.get("/logs", response_class=HTMLResponse)
+    async def logs_view(
+        request: Request,
+        user: UserSession = Depends(get_current_user),
+        page: int = Query(1, ge=1),
+        event_type: Optional[str] = Query(None),
+    ):
+        if user.role not in {"technik", "serwis"}:
+            raise HTTPException(status_code=403, detail="Insufficient privileges")
+
+        if event_type and event_type not in EVENT_TYPES:
+            raise HTTPException(status_code=400, detail="Unknown event type")
+
+        per_page: int = getattr(app.state, "logs_page_size", 10)
+        total_events = event_logger.count_events(event_type=event_type)
+        total_pages = max(1, math.ceil(total_events / per_page)) if total_events else 1
+        page = min(page, total_pages)
+        offset = (page - 1) * per_page
+        records = event_logger.list_events(limit=per_page, offset=offset, event_type=event_type)
+        tzinfo = getattr(app.state, "logs_timezone", timezone.utc)
+
+        def _format_payload(payload: Dict[str, object]) -> List[Dict[str, str]]:
+            items: List[Dict[str, str]] = []
+            for key, value in payload.items():
+                items.append({"key": str(key), "value": str(value)})
+            return items
+
+        events = [
+            {
+                "ts": datetime.fromtimestamp(record.ts, tzinfo).strftime("%Y-%m-%d %H:%M:%S"),
+                "type": record.type,
+                "message": record.message,
+                "payload_items": _format_payload(record.payload),
+            }
+            for record in records
+        ]
+
+        pagination = {
+            "page": page,
+            "per_page": per_page,
+            "total": total_events,
+            "pages": total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+        }
+
+        context = {
+            "request": request,
+            "user": user,
+            "config": config,
+            "events": events,
+            "pagination": pagination,
+            "selected_type": event_type,
+            "event_types": sorted(EVENT_TYPES),
+            "toast": _pop_toast(request),
+        }
+
+        return templates.TemplateResponse("logs.html", context)
+
+    @app.get("/logs/export/pdf")
+    async def logs_export_pdf(
+        request: Request,
+        user: UserSession = Depends(get_current_user),
+        event_type: Optional[str] = Query(None),
+    ):
+        if user.role not in {"technik", "serwis"}:
+            raise HTTPException(status_code=403, detail="Insufficient privileges")
+
+        if event_type and event_type not in EVENT_TYPES:
+            raise HTTPException(status_code=400, detail="Unknown event type")
+
+        tzinfo = getattr(app.state, "logs_timezone", timezone.utc)
+        font_path = STATIC_DIR / "fonts" / "DejaVuSansCondensed.ttf"
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        font_name = "Helvetica"
+        if font_path.exists():
+            pdf.add_font("DejaVu", "", str(font_path), uni=True)
+            pdf.add_font("DejaVu", "B", str(font_path), uni=True)
+            font_name = "DejaVu"
+
+        pdf.add_page()
+        pdf.set_font(font_name, "B", 14)
+        pdf.cell(0, 10, "Dziennik zdarzeń TCM", ln=1)
+        pdf.set_font(font_name, "", 10)
+        pdf.cell(0, 8, f"Wygenerowano: {datetime.now(tzinfo).strftime('%Y-%m-%d %H:%M:%S')}", ln=1)
+        if event_type:
+            pdf.cell(0, 8, f"Filtr typu: {event_type}", ln=1)
+        pdf.ln(2)
+        pdf.set_font(font_name, "B", 10)
+        pdf.cell(40, 8, "Data", border=0)
+        pdf.cell(25, 8, "Typ", border=0)
+        pdf.cell(0, 8, "Szczegóły", ln=1)
+        pdf.set_font(font_name, "", 10)
+
+        for record in event_logger.iter_events(
+            chunk_size=config.logging.export_chunk_size,
+            event_type=event_type,
+            order="asc",
+        ):
+            timestamp = datetime.fromtimestamp(record.ts, tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+            payload_text = ", ".join(f"{key}: {value}" for key, value in record.payload.items())
+            message_line = record.message
+            if payload_text:
+                message_line = f"{message_line} ({payload_text})"
+            pdf.cell(40, 6, timestamp)
+            pdf.cell(25, 6, record.type)
+            pdf.multi_cell(0, 6, message_line)
+
+        pdf_bytes = pdf.output(dest="S").encode("latin1")
+        filename = f"tcm_logs_{datetime.now(tzinfo).strftime('%Y%m%d_%H%M%S')}.pdf"
+        headers = {"Content-Disposition": f"attachment; filename={filename}"}
+        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
 
     @app.get("/health", include_in_schema=False, response_class=PlainTextResponse)
     @limiter.exempt

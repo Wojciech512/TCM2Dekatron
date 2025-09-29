@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "components/event_table.html" import render_event_table %}
+
+{% block title %}Dziennik zdarzeń{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h1>Event Logs</h1>
+        <p class="card-intro">Systemowy dziennik zdarzeń rejestruje wszystkie kluczowe akcje użytkowników, urządzeń i czujników.</p>
+      </div>
+      <div class="card-actions">
+        <form method="get" class="filter-form">
+          <label>
+            Typ zdarzenia
+            <select name="event_type" onchange="this.form.submit()">
+              <option value="" {% if not selected_type %}selected{% endif %}>Wszystkie</option>
+              {% for etype in event_types %}
+              <option value="{{ etype }}" {% if etype == selected_type %}selected{% endif %}>{{ etype }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </form>
+        <a class="btn" href="{{ request.url_for('logs_export_pdf') }}{% if selected_type %}?event_type={{ selected_type }}{% endif %}">Eksportuj PDF</a>
+      </div>
+    </div>
+    <div class="table-spacing">
+      {{ render_event_table(events) }}
+    </div>
+    <div class="pagination">
+      <div class="pagination-info">Strona {{ pagination.page }} z {{ pagination.pages }} (łącznie {{ pagination.total }} zdarzeń, {{ pagination.per_page }} na stronę)</div>
+      <div class="pagination-controls">
+        {% if pagination.has_prev %}
+          <a class="btn" href="{{ request.url_for('logs_view') }}?page={{ pagination.page - 1 }}{% if selected_type %}&event_type={{ selected_type }}{% endif %}">Poprzednia</a>
+        {% else %}
+          <button class="btn" disabled>Poprzednia</button>
+        {% endif %}
+        {% if pagination.has_next %}
+          <a class="btn" href="{{ request.url_for('logs_view') }}?page={{ pagination.page + 1 }}{% if selected_type %}&event_type={{ selected_type }}{% endif %}">Następna</a>
+        {% else %}
+          <button class="btn" disabled>Następna</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

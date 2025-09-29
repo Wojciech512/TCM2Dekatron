@@ -98,6 +98,8 @@ logging:
   encrypted_fields:
     - payload_json
   export_chunk_size: 500
+  page_size: 10
+  max_records: 5000
 
 secrets:
   secret_key_file: "/run/secrets/app_secret_key"
