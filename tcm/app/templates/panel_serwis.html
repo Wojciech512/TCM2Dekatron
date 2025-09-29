@@ -1,33 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Panel Serwisowy{% endblock %}
+{% block title %}Panel serwisowy{% endblock %}
 {% block content %}
-<section>
-    <h2>Mapowanie wyjść</h2>
-    <table>
-        <tr><th>Logiczne</th><th>Przekaźniki</th></tr>
-        {% for name, pins in config.outputs.relays.map.items() %}
-        <tr><td>{{ name }}</td><td>{{ pins|join(', ') }}</td></tr>
-        {% endfor %}
-    </table>
-    <table>
-        <tr><th>Logiczne</th><th>Tranzystory</th></tr>
-        {% for name, pins in config.outputs.transistors.map.items() %}
-        <tr><td>{{ name }}</td><td>{{ pins|join(', ') }}</td></tr>
-        {% endfor %}
-    </table>
-</section>
+<div class="section">
+  <h2>Mapowanie wyjść</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <h3 style="margin-top:0">Przekaźniki</h3>
+        <table>
+          <thead><tr><th>Wyjście logiczne</th><th>Przekaźniki</th></tr></thead>
+          <tbody>
+            {% for name, pins in config.outputs.relays.map.items() %}
+              <tr><th>{{ name }}</th><td>{{ pins|join(', ') if pins else '—' }}</td></tr>
+            {% endfor %}
+            {% if not config.outputs.relays.map %}
+              <tr><td colspan="2"><i>Brak przypisań.</i></td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3 style="margin-top:0">Tranzystory</h3>
+        <table>
+          <thead><tr><th>Wyjście logiczne</th><th>Tranzystory</th></tr></thead>
+          <tbody>
+            {% for name, pins in config.outputs.transistors.map.items() %}
+              <tr><th>{{ name }}</th><td>{{ pins|join(', ') if pins else '—' }}</td></tr>
+            {% endfor %}
+            {% if not config.outputs.transistors.map %}
+              <tr><td colspan="2"><i>Brak przypisań.</i></td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-<section>
-    <h2>Diagnostyka wejść</h2>
-    <p>Wejścia surowe: {{ state.inputs }}</p>
-</section>
+<div class="section">
+  <h2>Diagnostyka wejść</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Kanał</th><th>Stan logiczny</th></tr></thead>
+      <tbody>
+        {% for name, value in state.inputs.items() %}
+          <tr><th>{{ name }}</th><td><span class="pill {{ 'on' if value else 'off' }}">{{ '1' if value else '0' }}</span></td></tr>
+        {% endfor %}
+        {% if not state.inputs %}
+          <tr><td colspan="2"><i>Brak odczytów wejść.</i></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-<section>
-    <h2>Strike</h2>
-    <ul>
+<div class="section">
+  <h2>Strike</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>ID</th><th>Transistor</th></tr></thead>
+      <tbody>
         {% for strike_id, strike in config.strike.assignments.items() %}
-            <li>{{ strike_id }} → {{ strike.transistor or 'brak' }}</li>
+          <tr><th>{{ strike_id }}</th><td>{{ strike.transistor if strike.transistor else '—' }}</td></tr>
         {% endfor %}
-    </ul>
-</section>
+        {% if not config.strike.assignments %}
+          <tr><td colspan="2"><i>Brak skonfigurowanych strike.</i></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

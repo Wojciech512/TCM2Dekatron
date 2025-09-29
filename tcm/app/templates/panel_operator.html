@@ -1,20 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Panel Operatora{% endblock %}
+{% block title %}Panel operatora{% endblock %}
 {% block content %}
-<section>
-    <h2>Podgląd</h2>
-    <p>Alarm: {{ state.alarm_reason or 'brak' }}</p>
-    <p>Buzzer wyciszony: {{ 'tak' if state.buzzer_muted else 'nie' }}</p>
-</section>
+<div class="row">
+  <div class="col">
+    <div class="section">
+      <h2>Status alarmu</h2>
+      <div class="card">
+        <p style="margin:0">Alarm aktywny: <strong>{{ 'tak' if state.alarm_reason else 'nie' }}</strong></p>
+        <p style="margin:6px 0 0 0">Powód: <strong>{{ state.alarm_reason if state.alarm_reason else 'brak' }}</strong></p>
+        <p style="margin:6px 0 0 0">Buzzer wyciszony: <strong>{{ 'tak' if state.buzzer_muted else 'nie' }}</strong></p>
+        <p style="margin:6px 0 0 0">Strike aktywny do: <strong>{{ state.strike_active_until if state.strike_active_until else 'nieaktywny' }}</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="section">
+      <h2>Podgląd czujników</h2>
+      <div class="card">
+        <table>
+          <tbody>
+            <tr><th>Bateria — temperatura</th><td>{{ state.sensors.temp_batt if state.sensors.temp_batt is not none else '—' }} °C</td></tr>
+            <tr><th>Bateria — wilgotność</th><td>{{ state.sensors.hum_batt if state.sensors.hum_batt is not none else '—' }} %</td></tr>
+            <tr><th>Szafa — temperatura</th><td>{{ state.sensors.temp_cab if state.sensors.temp_cab is not none else '—' }} °C</td></tr>
+            <tr><th>Szafa — wilgotność</th><td>{{ state.sensors.hum_cab if state.sensors.hum_cab is not none else '—' }} %</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-<section>
-    <h2>Sterowanie strike</h2>
-    <ul>
-    {% for strike_id, strike in config.strike.assignments.items() %}
-        <li>{{ strike_id }} – {% if strike.transistor %}
-            <a href="/api/v1/strike/{{ strike_id }}/trigger">Wyzwól ({{ strike.transistor }})</a>
-        {% else %}nie skonfigurowany{% endif %}</li>
-    {% endfor %}
-    </ul>
-</section>
+<div class="section">
+  <h2>Sterowanie strike</h2>
+  <div class="card">
+    {% if config.strike.assignments %}
+      <div class="grid">
+        {% for strike_id, strike in config.strike.assignments.items() %}
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <strong>{{ strike_id|replace('_', ' ')|upper }}</strong>
+            {% if strike.transistor %}
+              <a class="btn" href="/api/v1/strike/{{ strike_id }}/trigger">Wyzwól ({{ strike.transistor }})</a>
+            {% else %}
+              <span class="pill off">Nie skonfigurowano</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Brak przypisań elektrozaczepów.</p>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

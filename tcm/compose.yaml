@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      TCM_APP_MODE: ${TCM_APP_MODE:-production}
     volumes:
       - ./config:/opt/tcm/tcm/config:ro
       - tcm_app_data:/var/lib/tcm

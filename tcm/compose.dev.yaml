@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  app:
+    environment:
+      TCM_APP_MODE: development
+      UVICORN_LOG_LEVEL: debug
+    volumes:
+      - ./config:/opt/tcm/tcm/config:ro
+      - ../tcm/app:/opt/tcm/tcm/app:delegated
+      - tcm_app_data:/var/lib/tcm
