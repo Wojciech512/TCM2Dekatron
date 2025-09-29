@@ -18,7 +18,8 @@ SESSION_CSRF_KEY = "tcm_csrf"
 class UserSession:
     username: str
     role: str
-
+# TODO dodać powiadomienia gdy użytkownik się zalogował i wylogował
+# TODO zweryfikować jak działa logowanie
 
 class AuthManager:
     def __init__(self, secret_key: str) -> None:
