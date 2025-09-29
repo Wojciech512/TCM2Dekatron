@@ -35,8 +35,8 @@ ENV UVICORN_HOST=0.0.0.0 \
 
 EXPOSE 8000
 
+#TODO gdy aplikacja staje się unhealthy to wykonaj restart usługi
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${UVICORN_PORT}/health || exit 1
 
 CMD ["uvicorn","tcm.app.main:app","--host","0.0.0.0","--port","8000","--log-level","debug","--lifespan","off"]
-#CMD ["uvicorn","tcm.app.main:app","--host","0.0.0.0","--port","8000"]

@@ -158,10 +158,14 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     def _panel_context(request: Request) -> Dict[str, object]:
         runtime = GLOBAL_STATE.read()
+        # TODO do ustawienia przez zmienne środowiskowe?
         return {
             "request": request,
             "state": runtime.snapshot(),
             "config": config,
+            "door_channels": [],
+            "relay_channels": [],
+            "sensor_channels": [],
         }
 
     @app.get("/dashboard", response_class=HTMLResponse)
