@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.exception_handlers import http_exception_handler as fastapi_http_exception_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -94,6 +95,39 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     app.include_router(state_router.router)
     app.include_router(v1_router.router)
 
+    TOAST_SESSION_KEY = "_toast_message"
+
+    def _store_toast(request: Request, message: str, level: str = "error", duration: int = 4000) -> None:
+        request.session[TOAST_SESSION_KEY] = {
+            "message": message,
+            "type": level,
+            "duration": duration,
+        }
+
+    def _pop_toast(request: Request):
+        toast = request.session.get(TOAST_SESSION_KEY)
+        if toast:
+            request.session.pop(TOAST_SESSION_KEY, None)
+        return toast
+
+    def _localize_detail(status_code: int, detail: str | None) -> str:
+        if detail:
+            mapping = {
+                "Invalid credentials": "Nieprawidłowa nazwa użytkownika lub hasło.",
+                "Insufficient role": "Brak uprawnień do tej sekcji.",
+                "Insufficient privileges": "Brak wymaganych uprawnień.",
+                "Service DIP not enabled": "Aktywuj przełącznik serwisowy, aby otworzyć ten panel.",
+            }
+            if detail in mapping:
+                return mapping[detail]
+        defaults = {
+            401: "Aby kontynuować, zaloguj się ponownie.",
+            403: "Brak dostępu do żądanej sekcji.",
+        }
+        if detail and detail not in {"Unauthorized", "Forbidden"}:
+            return detail
+        return defaults.get(status_code, "Wystąpił błąd.")
+
     @app.on_event("startup")
     async def startup_event() -> None:
         if hasattr(control_loop, "initialize"):
@@ -114,9 +148,21 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         return templates.TemplateResponse(
             "429.html",
-            {"request": request, "detail": "Too many requests"},
+            {"request": request, "detail": "Too many requests", "toast": _pop_toast(request)},
             status_code=429,
         )
+
+    @app.exception_handler(HTTPException)
+    async def custom_http_exception_handler(request: Request, exc: HTTPException):
+        accept_header = request.headers.get("accept", "")
+        expects_html = "text/html" in accept_header or "*/*" in accept_header
+        if expects_html and exc.status_code in {401, 403}:
+            user = get_current_user(request)
+            message = _localize_detail(exc.status_code, exc.detail if isinstance(exc.detail, str) else None)
+            _store_toast(request, message, level="error")
+            target = request.url_for("login_get") if not user else request.url_for("dashboard")
+            return RedirectResponse(url=target, status_code=303)
+        return await fastapi_http_exception_handler(request, exc)
 
     # ------------------------------------------------------------------
     # Web views
@@ -125,8 +171,16 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     async def index(request: Request, user: Optional[UserSession] = Depends(get_current_user)):
         if not user:
             csrf = app.state.auth_manager.issue_csrf(request.session)
-            return templates.TemplateResponse("login.html", {
-                "request": request, "user": None, "config": config, "csrf_token": csrf})
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "user": None,
+                    "config": config,
+                    "csrf_token": csrf,
+                    "toast": _pop_toast(request),
+                },
+            )
         return RedirectResponse(url="/dashboard")
 
     @app.get("/login", response_class=HTMLResponse)
@@ -134,7 +188,13 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         csrf = app.state.auth_manager.issue_csrf(request.session)
         return templates.TemplateResponse(
             "login.html",
-            {"request": request, "csrf_token": csrf, "user": None, "config": config},
+            {
+                "request": request,
+                "csrf_token": csrf,
+                "user": None,
+                "config": config,
+                "toast": _pop_toast(request),
+            },
         )
 
     @app.post("/login")
@@ -166,6 +226,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             "door_channels": [],
             "relay_channels": [],
             "sensor_channels": [],
+            "toast": _pop_toast(request),
         }
 
     @app.get("/dashboard", response_class=HTMLResponse)
