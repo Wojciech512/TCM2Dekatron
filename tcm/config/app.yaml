@@ -102,7 +102,7 @@ logging:
   max_records: 5000
 
 secrets:
-  secret_key_file: "/run/secrets/app_secret_key"
-  fernet_key_file: "/run/secrets/app_fernet_key"
-  admin_hash_file: "/run/secrets/admin_bootstrap_hash"
+  secret_key_file: "/var/lib/tcm/secrets/app_secret_key"
+  fernet_key_file: "/var/lib/tcm/secrets/app_fernet_key"
+  admin_hash_file: "/var/lib/tcm/secrets/admin_bootstrap_hash"
 

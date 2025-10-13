@@ -1,57 +1,30 @@
 #!/usr/bin/env python3
-"""Generate application secrets for TCM 2.0."""
-
 from __future__ import annotations
 
 import argparse
-import os
-import secrets
 from getpass import getpass
 from pathlib import Path
 
-from cryptography.fernet import Fernet
-from passlib.hash import argon2
+if __package__ is None or __package__ == "":
+    import sys
 
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "secrets"
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-
-def generate_app_secret_key() -> str:
-    """Return a 64-byte secret key encoded as hex."""
-
-    # ``secrets.token_hex`` returns two hex characters per byte.
-    return secrets.token_hex(64)
-
-
-def generate_app_fernet_key() -> str:
-    """Return a Fernet key encoded as URL-safe base64."""
-
-    return Fernet.generate_key().decode("ascii")
-
-
-def generate_admin_hash(password: str) -> str:
-    """Hash the bootstrap admin password using Argon2id."""
-
-    return argon2.using(type="ID", rounds=3, memory_cost=65536, parallelism=2).hash(
-        password
+    from tcm.app.core.secrets import (
+        generate_admin_hash,
+        generate_app_fernet_key,
+        generate_app_secret_key,
+        write_secret,
+    )
+else:
+    from ..app.core.secrets import (
+        generate_admin_hash,
+        generate_app_fernet_key,
+        generate_app_secret_key,
+        write_secret,
     )
 
-
-def write_secret(path: Path, value: str, *, force: bool = False) -> None:
-    """Persist a secret to ``path`` with restrictive permissions."""
-
-    if path.exists() and not force:
-        raise FileExistsError(
-            f"Secret file {path} already exists. Use --force to overwrite."
-        )
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(value + "\n", encoding="utf-8")
-
-    try:
-        os.chmod(path, 0o600)
-    except PermissionError:
-        # Ignore permission errors on platforms that do not support chmod.
-        pass
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "secrets"
 
 
 def collect_admin_password(provided: str | None, *, confirm: bool = True) -> str:
@@ -135,5 +108,5 @@ def main() -> None:
     print(f"Secrets written to {args.output_dir}")
 
 
-if __name__ == "__main__":  # pragma: no cover - CLI entry point
+if __name__ == "__main__":
     main()

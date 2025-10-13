@@ -1,6 +1,6 @@
 # Docker secrets (nie commitować prawdziwych wartości)
 
-W produkcji pliki powinny być generowane podczas wdrożenia i kopiowane do `/run/secrets/` przez Docker:
+W produkcji pliki są zapisywane w wolumenie kontenera pod `/var/lib/tcm/secrets`. Brakujące wartości zostaną wygenerowane automatycznie podczas startu aplikacji (na podstawie zmiennej `TCM_ADMIN_BOOTSTRAP_PASSWORD`).
 
 * `app_secret_key` – 64 losowe bajty (hex/base64) dla podpisywania sesji i CSRF.
 * `app_fernet_key` – klucz Fernet (32 bajty base64) do szyfrowania logów.

@@ -11,7 +11,7 @@ tcm/app/
   main.py       # Fabryka aplikacji + rejestracja background tasków
 ```
 
-`main.py` ładuje konfigurację YAML (`tcm/config/app.yaml`), sekrety z Docker secrets lub zmiennych środowisk i przygotowuje:
+`main.py` ładuje konfigurację YAML (`tcm/config/app.yaml`), sekrety z wolumenu `/var/lib/tcm/secrets` lub zmiennych środowisk i przygotowuje:
 
 * `HardwareInterface` obsługujący MCP23S17 (z symulacją gdy brak bibliotek RPi),
 * `ControlLoop` uruchamiany jako background task (pętle: szybka i logiki),

@@ -39,6 +39,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .api import state as state_router
 from .api import v1 as v1_router
 from .core.config import AppConfig, load_secret_file
+from .core.secrets import ensure_secret_material
 from .core.control_loop import ControlLoop
 from .core.hardware import HardwareInterface, build_gpio_map
 from .core.state import GLOBAL_STATE
@@ -67,6 +68,14 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         config_path or Path(__file__).resolve().parents[1] / "config" / "app.yaml"
     )
     config = AppConfig.from_yaml(config_path)
+
+    admin_password = os.getenv("TCM_ADMIN_BOOTSTRAP_PASSWORD")
+    ensure_secret_material(
+        secret_key_path=config.secrets.secret_key_file,
+        fernet_key_path=config.secrets.fernet_key_file,
+        admin_hash_path=config.secrets.admin_hash_file,
+        admin_password=admin_password.strip() if admin_password else None,
+    )
 
     secret_key = load_secret("TCM_SECRET_KEY", config.secrets.secret_key_file)
     if not secret_key:
