@@ -32,19 +32,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    secrets:
-      - app_secret_key
-      - app_fernet_key
-      - admin_bootstrap_hash
-
-secrets:
-  app_secret_key:
-    file: ./secrets/app_secret_key
-  app_fernet_key:
-    file: ./secrets/app_fernet_key
-  admin_bootstrap_hash:
-    file: ./secrets/admin_bootstrap_hash
-
 networks:
   frontend:
     driver: bridge

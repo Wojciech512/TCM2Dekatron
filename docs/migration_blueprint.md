@@ -66,7 +66,7 @@ Reguły kopiują aktualne zachowanie:
 ## 6. Bezpieczeństwo
 * **Hashowanie haseł** – Argon2id (`argon2-cffi`) z per-user salt, przechowywane w tabeli `users` (zastępuje sekcję `users` w `config.json`).【F:app.py†L92-L111】
 * **Role** – operator, technik, serwis, przechowywane w bazie; autoryzacja w middleware + dekoratory.
-* **Sekrety** – `SECRET_KEY`, `FERNET_KEY`, `ADMIN_BOOTSTRAP_HASH` dostarczane jako Docker secrets.
+* **Sekrety** – `SECRET_KEY`, `FERNET_KEY`, `ADMIN_BOOTSTRAP_HASH` przechowywane w wolumenie `/var/lib/tcm/secrets`; brakujące wartości generowane automatycznie przy starcie kontenera.
 * **Sesje** – Signed/Encrypted cookie (Starlette `SessionMiddleware`) z `max_age` i atrybutami `HttpOnly`, `Secure`, `SameSite='Strict'`; rotacja klucza co 24h przez `KeyManager`.
 * **CSRF** – token generowany per-sesja i weryfikowany w formularzach POST.
 * **mTLS** – NGINX wymusza klienta z certyfikatu lokalnego CA.
@@ -82,7 +82,7 @@ Reguły kopiują aktualne zachowanie:
 
 ## 8. Konfiguracja
 * `config/app.yaml` przechowuje dane sieciowe, progi, mapowania i interwały.
-* Wrażliwe dane (hasła, klucze) przeniesione do `secrets/` (Docker secrets) i `.env`.
+* Wrażliwe dane (hasła, klucze) przeniesione do wolumenu `secrets/` w `/var/lib/tcm` oraz zmiennych `.env`.
 * `ConfigService` łączy YAML + secrets + zmienne środowiskowe i weryfikuje schemat (Pydantic Settings).
 
 ## 9. Konteneryzacja
