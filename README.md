@@ -19,10 +19,19 @@ Repozytorium zawiera kompletną implementację aplikacji TCM 2.0 w FastAPI z Jin
    - Plik `tcm/compose.dev.yaml` ustawia `TCM_APP_MODE=development` i montuje katalog `tcm/app` z repozytorium, więc każda zmiana kodu lub szablonów jest przeładowywana w kontenerze.
    - Domyślnie aplikacja startuje w trybie produkcyjnym; tryb developerski trzeba świadomie włączyć poprzez dodatkowy plik Compose lub ustawienie `TCM_APP_MODE=development`.
 
-Ustaw zmienne środowiskowe lub pliki secrets (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`):
-    - generowanie: `TCM_ADMIN_HASH=...` **[Windows and Linux tested:]:** `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))""`
-    - generowanie: `TCM_FERNET_KEY=...` **[Windows tested:]:** `python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
-    - generowanie: `TCM_SECRET_KEY=...` **[Windows tested:]:** `python -c "import secrets; print(secrets.token_hex(64))"`
+Ustaw zmienne środowiskowe lub pliki secrets (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`).
+
+W repozytorium dostępny jest skrypt automatyzujący generowanie plików Docker secrets:
+
+```bash
+python tcm/scripts/generate_secrets.py
+```
+
+Skrypt wygeneruje klucze (`app_secret_key`, `app_fernet_key`) oraz poprosi o hasło dla konta administratora, tworząc hasz Argon2 (`admin_bootstrap_hash`). W przypadku potrzeby ręcznej generacji wartości można nadal użyć poleceń `python -c`:
+
+* `TCM_ADMIN_HASH=...`: `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))"`
+* `TCM_FERNET_KEY=...`: `python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
+* `TCM_SECRET_KEY=...`: `python -c "import secrets; print(secrets.token_hex(64))"`
 
 ## Tryb aplikacji sterowany zmienną środowiskową
 
