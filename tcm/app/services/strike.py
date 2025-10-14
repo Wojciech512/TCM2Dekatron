@@ -18,6 +18,12 @@ class StrikeDefinition:
     transistor: Optional[str]
 
 
+@dataclass
+class StrikeTriggerOutcome:
+    success: bool
+    error: Optional[str] = None
+
+
 class StrikeService:
     def __init__(
         self,
@@ -31,10 +37,19 @@ class StrikeService:
         self.default_duration = default_duration
         self.assignments = assignments
 
-    def trigger(self, strike_id: str, duration: Optional[float] = None) -> bool:
+    def trigger(
+        self, strike_id: str, duration: Optional[float] = None
+    ) -> StrikeTriggerOutcome:
         transistor = self.assignments.get(strike_id)
-        if transistor is None:
-            return False
+        if not transistor:
+            return StrikeTriggerOutcome(success=False, error="not_configured")
+        if not self.hardware.has_transistor_channel(transistor):
+            self.logger.log(
+                "STRIKE", "Strike transistor unavailable", {"strike": strike_id}
+            )
+            return StrikeTriggerOutcome(
+                success=False, error="transistor_unavailable"
+            )
         duration = duration or self.default_duration
 
         def worker() -> None:
@@ -58,4 +73,4 @@ class StrikeService:
             self.logger.log("STRIKE", "Strike released", {"strike": strike_id})
 
         Thread(target=worker, daemon=True).start()
-        return True
+        return StrikeTriggerOutcome(success=True)
