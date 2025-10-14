@@ -3,12 +3,12 @@ set -e
 APP="tcm.app.main:app"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
-VENV_BIN="${VIRTUAL_ENV:-/opt/venv}/bin"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 
 if [ "$TCM_APP_MODE" = "development" ]; then
-  exec "${VENV_BIN}/uvicorn" "$APP" --host "$HOST" --port "$PORT" --reload --log-level "${UVICORN_LOG_LEVEL:-debug}"
+  exec "$PYTHON_BIN" -m uvicorn "$APP" --host "$HOST" --port "$PORT" --reload --log-level "${UVICORN_LOG_LEVEL:-debug}"
 else
-  exec "${VENV_BIN}/gunicorn" "$APP" \
+  exec "$PYTHON_BIN" -m gunicorn "$APP" \
     -k uvicorn.workers.UvicornWorker \
     --bind "$HOST:$PORT" \
     --workers "${WORKERS:-1}" \

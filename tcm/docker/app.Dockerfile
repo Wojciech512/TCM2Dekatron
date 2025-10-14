@@ -4,7 +4,7 @@ FROM python:3.11-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_HOME=/opt/tcm \
-    VIRTUAL_ENV=/opt/venv
+    PIP_ROOT=/opt/python
 
 WORKDIR ${APP_HOME}
 
@@ -16,17 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt constraints.txt ./
-RUN python -m venv ${VIRTUAL_ENV} \
-    && ${VIRTUAL_ENV}/bin/pip install --upgrade pip \
-    && ${VIRTUAL_ENV}/bin/pip install --no-cache-dir -r requirements.txt -c constraints.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --prefix="${PIP_ROOT}" -r requirements.txt -c constraints.txt
 
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_HOME=/opt/tcm \
-    VIRTUAL_ENV=/opt/venv \
-    PATH="${VIRTUAL_ENV}/bin:${PATH}" \
     TCM_DB_DIR=/var/lib/tcm
 
 WORKDIR ${APP_HOME}
@@ -36,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libsqlite3-mod-spatialite \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder /opt/python/ /usr/local/
 COPY tcm/ ./tcm/
 COPY tcm/docker/start.sh ./docker/start.sh
 
