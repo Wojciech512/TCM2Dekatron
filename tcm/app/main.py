@@ -37,7 +37,10 @@ from fontTools.ttLib import TTLibError
 from fpdf import FPDF
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+try:
+    from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+except ImportError:  # pragma: no cover - fallback for older Starlette releases
+    from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from logging import config as logging_config
 from jinja2 import FileSystemBytecodeCache
 
