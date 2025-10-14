@@ -34,11 +34,12 @@
    - **`universal.p12`** – zawiera klucz prywatny i łańcuch. To plik, który użytkownik importuje do magazynu certyfikatów przeglądarki/systemu.
    - **`universal.key.pem`** – surowy klucz prywatny. Nie jest wymagany do importu, ale może przydać się automatom (np. skrypty curl). Usuń po wykorzystaniu.
    - **`universal-fullchain.pem`** – certyfikat klienta z dołączonym CA. Użyteczny dla narzędzi CLI.
+   - Certyfikat klienta ma DN `CN=TCM Universal Client, OU=Shared`. Dzięki temu reverse proxy rozpozna użytkownika jako uprawnionego.
 3. Instrukcje importu do przeglądarek:
    - **Firefox**: `Ustawienia → Prywatność i bezpieczeństwo → Certyfikaty → Wyświetl certyfikaty → Importuj`, wskaż `universal.p12`, podaj hasło `Test123!`, zaznacz „zawsze ufaj temu certyfikatowi klienta”.
    - **Chrome/Edge (Windows)**: `Ustawienia → Prywatność i zabezpieczenia → Zarządzaj certyfikatami → Importuj`, wybierz magazyn „Osobisty”, wgraj `universal.p12`, hasło `Test123!`.
    - **Chrome (macOS)**: Otwórz „Pęk kluczy”, przeciągnij `universal.p12` do `login`, wpisz hasło `Test123!`, ustaw zawsze ufaj certyfikatowi.
-4. W systemach automatycznych (np. curl) użyj `universal.key.pem` + `universal-fullchain.pem` i upewnij się, że pliki mają prawa `600` oraz są przechowywane na zaszyfrowanym dysku.
+4. W systemach automatycznych (np. curl) użyj `universal.key.pem` + `universal-fullchain.pem` i upewnij się, że pliki mają prawa `600` oraz są przechowywane na zaszyfrowanym dysku. Nie zmieniaj DN certyfikatu przy przepakowywaniu, ponieważ reverse proxy filtruje dostęp po `OU=Shared` / `CN=TCM Universal Client`.
 
 ## 4. Co zabezpieczyć, co można udostępnić
 
