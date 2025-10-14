@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import math
 import os
@@ -31,10 +32,13 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 from fontTools.ttLib import TTLibError
 from fpdf import FPDF
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
+from logging import config as logging_config
+from jinja2 import FileSystemBytecodeCache
 
 from .api import state as state_router
 from .api import v1 as v1_router
@@ -56,6 +60,85 @@ from .services.users import UserStore
 
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+class JsonFormatter(logging.Formatter):
+    """Simple JSON formatter for structured logging."""
+
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        log_record = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
+        if record.stack_info:
+            log_record["stack_info"] = self.formatStack(record.stack_info)
+        if record.pathname:
+            log_record["path"] = record.pathname
+        if record.funcName:
+            log_record["func"] = record.funcName
+        if record.lineno:
+            log_record["line"] = record.lineno
+        return json.dumps(log_record, ensure_ascii=False)
+
+
+def configure_logging() -> None:
+    if getattr(configure_logging, "_configured", False):
+        return
+
+    log_level = (
+        os.getenv("UVICORN_LOG_LEVEL")
+        or os.getenv("TCM_LOG_LEVEL")
+        or os.getenv("LOG_LEVEL")
+        or "INFO"
+    ).upper()
+
+    logging_config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {"json": {"()": JsonFormatter}},
+            "handlers": {
+                "default": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "json",
+                    "stream": "ext://sys.stdout",
+                }
+            },
+            "root": {"handlers": ["default"], "level": log_level},
+            "loggers": {
+                "uvicorn": {"handlers": ["default"], "level": log_level, "propagate": False},
+                "uvicorn.error": {
+                    "handlers": ["default"],
+                    "level": log_level,
+                    "propagate": False,
+                },
+                "uvicorn.access": {
+                    "handlers": ["default"],
+                    "level": log_level,
+                    "propagate": False,
+                },
+                "gunicorn.error": {
+                    "handlers": ["default"],
+                    "level": log_level,
+                    "propagate": False,
+                },
+                "gunicorn.access": {
+                    "handlers": ["default"],
+                    "level": log_level,
+                    "propagate": False,
+                },
+            },
+        }
+    )
+
+    configure_logging._configured = True  # type: ignore[attr-defined]
+
+
+configure_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +222,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         tz = timezone.utc
 
     app = FastAPI(title="TCM 2.0 Controller", version="2.0.0")
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         SessionMiddleware,
         secret_key=secret_key,
@@ -149,7 +233,29 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     )
 
     templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+    templates.env.trim_blocks = True
+    templates.env.lstrip_blocks = True
+    app_mode = os.getenv("TCM_APP_MODE", "production").lower()
+    if app_mode == "production":
+        cache_dir = Path("/tmp/j2cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        templates.env.bytecode_cache = FileSystemBytecodeCache(
+            directory=str(cache_dir), pattern="%s.cache"
+        )
+        templates.env.auto_reload = False
+    else:
+        templates.env.auto_reload = True
+
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.middleware("http")
+    async def add_cache_headers(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers.setdefault(
+                "Cache-Control", "public, max-age=2592000, immutable"
+            )
+        return response
 
     gpio_map = build_gpio_map(
         config.outputs.relays.map,

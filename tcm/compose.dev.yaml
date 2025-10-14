@@ -7,6 +7,7 @@ services:
       dockerfile: tcm/docker/app.Dockerfile
     image: tcm-app:latest
     restart: unless-stopped
+    command: []
     ports:
       - "8000:8000"
     env_file:
@@ -24,6 +25,11 @@ services:
     privileged: false
     cap_add:
       - SYS_TIME
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
