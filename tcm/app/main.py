@@ -11,15 +11,17 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Awaitable, Callable, Dict, List, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.exception_handlers import (
     http_exception_handler as fastapi_http_exception_handler,
 )
@@ -35,6 +37,7 @@ from fontTools.ttLib import TTLibError
 from fpdf import FPDF
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
+from jinja2 import FileSystemBytecodeCache
 
 from .api import state as state_router
 from .api import v1 as v1_router
@@ -56,6 +59,32 @@ from .services.users import UserStore
 
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+class JsonFormatter(logging.Formatter):
+    """Format log records as structured JSON."""
+
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        log_payload = {
+            "level": record.levelname.lower(),
+            "name": record.name,
+            "message": record.getMessage(),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+        if record.exc_info:
+            log_payload["exc_info"] = self.formatException(record.exc_info)
+        if record.stack_info:
+            log_payload["stack"] = record.stack_info
+        return json.dumps(log_payload, ensure_ascii=False)
+
+
+def configure_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
+
+
+configure_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +168,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         tz = timezone.utc
 
     app = FastAPI(title="TCM 2.0 Controller", version="2.0.0")
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         SessionMiddleware,
         secret_key=secret_key,
@@ -148,8 +178,28 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         session_cookie="tcm_session",
     )
 
+    mode = os.getenv("TCM_APP_MODE", "production")
     templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+    if mode == "production":
+        templates.env.bytecode_cache = FileSystemBytecodeCache(
+            directory="/tmp/j2cache", pattern="%s.cache"
+        )
+        templates.env.auto_reload = False
+    else:
+        templates.env.auto_reload = True
+    templates.env.trim_blocks = True
+    templates.env.lstrip_blocks = True
+
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.middleware("http")
+    async def add_cache_headers(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "public, max-age=2592000, immutable"
+        return response
 
     gpio_map = build_gpio_map(
         config.outputs.relays.map,

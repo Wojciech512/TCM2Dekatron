@@ -1,7 +1,9 @@
 fastapi
 uvicorn[standard]
+gunicorn
 jinja2
 python-multipart
+aiofiles
 itsdangerous
 passlib[argon2]
 python-dotenv
