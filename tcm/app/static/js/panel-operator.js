@@ -51,9 +51,6 @@ function handleButtonClick(button) {
         } else {
           window.TCMToast(message, { type: "error", duration: 6000 });
         }
-        else {
-            (_a = window.TCMToast) === null || _a === void 0 ? void 0 : _a.call(window, message, { type: "error", duration: 6000 });
-        }
     })
         .finally(() => {
         button.disabled = false;
