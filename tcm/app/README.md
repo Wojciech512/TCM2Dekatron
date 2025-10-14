@@ -1,28 +1,21 @@
-# Struktura aplikacji FastAPI
+# Aplikacja FastAPI
+
+Kod aplikacji znajduje się w katalogu `tcm/app`. Najczęściej edytowane moduły to:
 
 ```
 tcm/app/
-  api/          # Routery FastAPI (state, v1 endpoints)
-  core/         # Warstwa sprzętowa, konfiguracja i pętla sterująca
-  security/     # Autoryzacja, sesje, CSRF, role
-  services/     # Rejestr zdarzeń, użytkownicy, strike
-  templates/    # Szablony Jinja2 (dashboard + panele)
-  static/       # Zasoby front-end (CSS)
-  main.py       # Fabryka aplikacji + rejestracja background tasków
+  api/        # endpointy REST
+  core/       # konfiguracja, integracje z hardware i pętla sterująca
+  security/   # sesje, role, CSRF
+  services/   # logi, użytkownicy, obsługa strike
+  templates/  # szablony Jinja2
+  static/     # pliki statyczne
+  main.py     # fabryka aplikacji FastAPI
 ```
 
-`main.py` ładuje konfigurację YAML (`tcm/config/app.yaml`), sekrety z wolumenu `/var/lib/tcm/secrets` lub zmiennych środowisk i przygotowuje:
+Aplikację uruchamiasz wyłącznie przez Docker Compose:
 
-* `HardwareInterface` obsługujący MCP23S17 (z symulacją gdy brak bibliotek RPi),
-* `ControlLoop` uruchamiany jako background task (pętle: szybka i logiki),
-* serwisy `EventLogger`, `UserStore` (SQLite) oraz `StrikeService` (sterowanie elektrozaczepami),
-* warstwę webową (sesje, CSRF, szablony, rate limiting via SlowAPI).
+- `make dev` → tryb developerski z autoreloadem (`tcm/compose.dev.yaml`).
+- `make prod` → tryb produkcyjny (`tcm/compose.yaml`).
 
-Panele Operator/Technik/Serwis renderowane są z danych runtime (`GLOBAL_STATE`) i konfiguracji.
-
-## Dziennik zdarzeń
-
-* Interfejs webowy udostępnia stronę `/logs` z paginacją i filtrowaniem według typu zdarzenia.
-* Eksport do PDF dostępny jest z poziomu UI oraz endpointu `/logs/export/pdf`.
-* Liczbę rekordów na stronę można ustawić przez zmienną `TCM_LOGS_PAGE_SIZE` (domyślnie 10).
-* Ograniczenie rozmiaru dziennika ustawia `TCM_LOGS_MAX_RECORDS` (domyślnie 5000 wpisów, starsze rekordy są rotowane).
+Sekrety (`app_secret_key`, `app_fernet_key`, `admin_bootstrap_hash`) powinny znajdować się w wolumenie `/var/lib/tcm/secrets` lub zostać wygenerowane wcześniej poleceniem `python tcm/scripts/generate_secrets.py`.

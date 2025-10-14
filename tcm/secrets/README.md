@@ -1,17 +1,17 @@
-# Docker secrets (nie commitować prawdziwych wartości)
+# Sekrety aplikacji
 
-W produkcji pliki są zapisywane w wolumenie kontenera pod `/var/lib/tcm/secrets`. Brakujące wartości zostaną wygenerowane automatycznie podczas startu aplikacji (na podstawie zmiennej `TCM_ADMIN_BOOTSTRAP_PASSWORD`).
+`make prod` oczekuje, że pliki z sekretami będą dostępne w wolumenie `/var/lib/tcm/secrets` (albo zostaną wygenerowane przy pierwszym uruchomieniu kontenera).
 
-* `app_secret_key` – 64 losowe bajty (hex/base64) dla podpisywania sesji i CSRF.
-* `app_fernet_key` – klucz Fernet (32 bajty base64) do szyfrowania logów.
-* `admin_bootstrap_hash` – hasz Argon2 domyślnego konta administratora.
+Minimalny zestaw plików:
 
-Generator znajdujący się w repozytorium ułatwia automatyczne tworzenie tych plików:
+- `app_secret_key`
+- `app_fernet_key`
+- `admin_bootstrap_hash`
+
+Aby przygotować je z wyprzedzeniem, uruchom:
 
 ```bash
 python tcm/scripts/generate_secrets.py
 ```
 
-Domyślnie pliki są zapisywane w `tcm/secrets/`. Skrypt poprosi o hasło dla konta administratora (lub przyjmie je z opcji `--admin-password`), a następnie utworzy wymagane pliki z prawami `600`. Flaga `--print` pozwala wypisać wartości na stdout, a `--force` nadpisać istniejące pliki.
-
-Pliki w repozytorium mogą zawierać tylko instrukcje – bez sekretów.
+Skrypt tworzy pliki w `tcm/secrets/`, ustawia odpowiednie uprawnienia i może przyjąć hasło administratora z argumentu `--admin-password`. Przy migracji do środowiska docelowego skopiuj pliki na docelowy wolumen lub ustaw zmienną `TCM_ADMIN_BOOTSTRAP_PASSWORD`, aby kontener wygenerował hash samodzielnie.

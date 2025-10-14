@@ -1,74 +1,42 @@
-# Plan migracji TCM 2.0 do FastAPI
+# TCM 2.0 na FastAPI
 
-Repozytorium zawiera kompletną implementację aplikacji TCM 2.0 w FastAPI z Jinja2, wraz z dokumentacją i artefaktami konfiguracyjnymi dla docelowego wdrożenia w Docker Compose.
+Repozytorium zawiera kompletną aplikację TCM 2.0 (backend FastAPI + reverse proxy NGINX) wraz z narzędziami do generowania certyfikatów i uruchamiania środowisk w Docker Compose.
 
-## Kluczowe dokumenty
-* `docs/migration_blueprint.md` – główny plan migracji, architektura, bezpieczeństwo, testy.
-* `tcm/config/app.yaml` – przykładowa konfiguracja YAML bez sekretów.
-* `tcm/compose.yaml` – definicja stosu Docker Compose (aplikacja + reverse proxy).
-* `tcm/docker/*.Dockerfile` – obrazy aplikacji i reverse proxy.
-* `tcm/deploy/ca/README.md` – procedura CA i mTLS.
-* `tcm/scripts/*.sh` – 
-* CA i instalacja systemd.
+## Wymagania
 
-## Uruchomienie lokalne (tryb developerski)
+- Docker z Compose v2
+- `make`
+- (opcjonalnie) Python 3.11+ do skryptów pomocniczych
 
-### Kontener Docker z trybem developerskim
-1. Zbuduj obrazy: `docker compose -f tcm/compose.yaml build`.
-2. Uruchom środowisko z autoreloadem: `docker compose -f tcm/compose.yaml -f tcm/compose.dev.yaml up app`.
-   - Plik `tcm/compose.dev.yaml` ustawia `TCM_APP_MODE=development` i montuje katalog `tcm/app` z repozytorium, więc każda zmiana kodu lub szablonów jest przeładowywana w kontenerze.
-   - Domyślnie aplikacja startuje w trybie produkcyjnym; tryb developerski trzeba świadomie włączyć poprzez dodatkowy plik Compose lub ustawienie `TCM_APP_MODE=development`.
+## Generowanie certyfikatów i sekretów
 
-Ustaw zmienne środowiskowe (`TCM_SECRET_KEY`, `TCM_FERNET_KEY`, `TCM_ADMIN_HASH`, `TCM_DB_PATH`) lub pozwól aplikacji automatycznie utworzyć brakujące sekrety w katalogu `/var/lib/tcm/secrets` podczas pierwszego startu kontenera. Hasło konta administratora może zostać przekazane przez zmienną `TCM_ADMIN_BOOTSTRAP_PASSWORD` (np. w pliku `.env` używanym przez Docker Compose). Jeśli zmienna nie jest ustawiona, kontener wystartuje bez tworzenia użytkownika `admin`.
+1. **Certyfikaty mTLS** – uruchom `make ca`. Polecenie wywołuje `tcm/scripts/gen-ca.sh`, tworzy kompletny zestaw lokalnego CA i kopiuje certyfikaty do `tcm/deploy/reverse-proxy/certs/`. Gotowa paczka kliencka `client-universal.tar.gz` zawiera certyfikat współdzielony przez Operatora, Technika i Serwis.
+2. **Sekrety aplikacji** – w razie potrzeby uruchom `python tcm/scripts/generate_secrets.py`, aby przygotować pliki w `tcm/secrets/` lub wypisać wartości i przenieść je do docelowego wolumenu (`/var/lib/tcm/secrets`). Skrypt poprosi o hasło administracyjne i wygeneruje `app_secret_key`, `app_fernet_key` oraz `admin_bootstrap_hash`.
 
-W repozytorium dostępny jest również skrypt automatyzujący ręczne generowanie sekretów, przydatny np. w procesach CI/CD:
+## Uruchomienie w trybie developerskim
 
 ```bash
-python tcm/scripts/generate_secrets.py
+make dev
 ```
 
-Do wygenerowania lokalnego urzędu CA oraz certyfikatów dla reverse proxy użyj jednego polecenia:
+Target buduje wymagane obrazy i uruchamia `docker compose` z plikiem `tcm/compose.dev.yaml`. Kontener aplikacji startuje w trybie `development` (autoreload, logi `debug`) i montuje katalog `tcm/app`, dzięki czemu zmiany w kodzie są natychmiast widoczne.
+
+## Uruchomienie w trybie produkcyjnym
 
 ```bash
-make ca
+make prod
 ```
 
-Polecenie utworzy artefakty w `tcm/deploy/ca/output/` oraz automatycznie umieści pliki TLS/mTLS w `tcm/deploy/reverse-proxy/certs/`,
-dzięki czemu `make prod` pobiera je podczas budowania obrazów. Zestaw klienta mTLS ma teraz jedną paczkę `client-universal.tar.gz`
-z certyfikatem współdzielonym przez Operatora, Technika i Serwis.
+Target w razie potrzeby automatycznie generuje certyfikaty (`make ca`), a następnie buduje i podnosi usługę według `tcm/compose.yaml`. Aplikacja działa w trybie `production`. Po starcie możesz śledzić logi poleceniem `make logs`.
 
-Skrypt utworzy klucze (`app_secret_key`, `app_fernet_key`) oraz poprosi o hasło dla konta administratora, tworząc hasz Argon2 (`admin_bootstrap_hash`). W przypadku potrzeby ręcznej generacji pojedynczych wartości można nadal użyć poleceń `python -c`:
+## Przydatne dodatkowe polecenia
 
-* `TCM_ADMIN_HASH=...`: `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))"`
-* `TCM_FERNET_KEY=...`: `python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"`
-* `TCM_SECRET_KEY=...`: `python -c "import secrets; print(secrets.token_hex(64))"`
+- `make clean-ca` – usuwa wygenerowane certyfikaty, aby rozpocząć proces od nowa.
+- `docker compose -f tcm/compose.yaml down` – zatrzymanie środowiska produkcyjnego.
+- `docker compose -f tcm/compose.dev.yaml down` – zatrzymanie środowiska developerskiego.
 
-## Tryb aplikacji sterowany zmienną środowiskową
+## Gdzie szukać kolejnych informacji
 
-Kontener aplikacyjny honoruje zmienną `TCM_APP_MODE`:
-
-* `production` (domyślnie) – uruchamia Uvicorn bez autoreloadu i z konfiguracją bezpieczną dla środowisk docelowych.
-* `development` – włącza autoreload i logowanie na poziomie `debug`, przeznaczone do pracy lokalnej.
-
-Wartość można nadać przez `.env`, `docker compose` (`-e TCM_APP_MODE=development`) albo dodatkowy plik Compose (`tcm/compose.dev.yaml`). Nieprawidłowa wartość spowoduje przerwanie startu kontenera.
-
-W kontenerach stosuj `tcm/compose.yaml`, który uruchamia usługę FastAPI i reverse proxy NGINX z TLS/mTLS.
-
-## Formatowanie i linting
-
-### Python
-
-Zainstaluj zależności deweloperskie: `pip install -r requirements-dev.txt -c constraints.txt`.
-
-* Formatowanie: `black tcm`
-* Sortowanie importów: `isort tcm`
-* Linting: `flake8 tcm`
-
-### Szablony i zasoby statyczne
-
-Zainstaluj narzędzia Node: `npm install`.
-
-* Sprawdzenie formatowania: `npm run lint`
-* Formatowanie: `npm run format`
-
-Prettier korzysta z pluginu `prettier-plugin-jinja-template`, dzięki czemu formatuje pliki Jinja2 (`*.html`, `*.jinja`, `*.j2`).
+- `tcm/deploy/ca/README.md` – skrócona procedura CA i opis artefaktów.
+- `tcm/app/README.md` – struktura katalogów aplikacji.
+- `docs/migration_blueprint.md` – szczegółowy plan migracji i architektury.
