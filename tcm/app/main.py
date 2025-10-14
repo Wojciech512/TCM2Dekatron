@@ -43,7 +43,13 @@ from .core.secrets import ensure_secret_material
 from .core.control_loop import ControlLoop
 from .core.hardware import HardwareInterface, build_gpio_map
 from .core.state import GLOBAL_STATE
-from .security.auth import SESSION_USER_KEY, AuthManager, UserSession, get_current_user
+from .security.auth import (
+    SESSION_USER_KEY,
+    AuthManager,
+    UserSession,
+    get_authenticated_user,
+    get_current_user,
+)
 from .services.logging import EVENT_TYPES, EventLogger
 from .services.strike import StrikeService
 from .services.users import UserStore
@@ -108,6 +114,23 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     user_store = UserStore(db_path)
     if admin_hash:
         user_store.create_user_with_hash("admin", admin_hash, "serwis")
+
+    default_users = (
+        ("operator", "Dekatron123!", "operator"),
+        ("technik", "Dekatron123!", "technik"),
+        ("serwis", "Dekatron123!", "serwis"),
+    )
+    created_bootstrap_users = [
+        username
+        for username, password, role in default_users
+        if user_store.ensure_user(username, password, role)
+    ]
+    if created_bootstrap_users:
+        event_logger.log(
+            "AUTH",
+            "Bootstrap accounts ensured",
+            {"usernames": created_bootstrap_users},
+        )
 
     try:
         tz_name = config.metadata.timezone if config and config.metadata else None
@@ -327,7 +350,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard(
-        request: Request, user: UserSession = Depends(get_current_user)
+        request: Request, user: UserSession = Depends(get_authenticated_user)
     ):
         context = _panel_context(request)
         context["user"] = user
@@ -335,7 +358,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.get("/panel/operator", response_class=HTMLResponse)
     async def panel_operator(
-        request: Request, user: UserSession = Depends(get_current_user)
+        request: Request, user: UserSession = Depends(get_authenticated_user)
     ):
         context = _panel_context(request)
         context["user"] = user
@@ -343,7 +366,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.get("/panel/technik", response_class=HTMLResponse)
     async def panel_technik(
-        request: Request, user: UserSession = Depends(get_current_user)
+        request: Request, user: UserSession = Depends(get_authenticated_user)
     ):
         if user.role not in {"technik", "serwis"}:
             raise HTTPException(status_code=403, detail="Insufficient role")
@@ -353,7 +376,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
 
     @app.get("/panel/serwis", response_class=HTMLResponse)
     async def panel_serwis(
-        request: Request, user: UserSession = Depends(get_current_user)
+        request: Request, user: UserSession = Depends(get_authenticated_user)
     ):
         if user.role != "serwis":
             raise HTTPException(status_code=403, detail="Insufficient role")
@@ -368,7 +391,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     @app.get("/logs", response_class=HTMLResponse)
     async def logs_view(
         request: Request,
-        user: UserSession = Depends(get_current_user),
+        user: UserSession = Depends(get_authenticated_user),
         page: int = Query(1, ge=1),
         event_type: Optional[str] = Query(None),
     ):
@@ -431,7 +454,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
     @app.get("/logs/export/pdf")
     async def logs_export_pdf(
         request: Request,
-        user: UserSession = Depends(get_current_user),
+        user: UserSession = Depends(get_authenticated_user),
         event_type: Optional[str] = Query(None),
     ):
         if user.role not in {"technik", "serwis"}:

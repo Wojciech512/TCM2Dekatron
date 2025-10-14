@@ -49,6 +49,20 @@ class UserStore:
         self._conn.commit()
 
     # ------------------------------------------------------------------
+    def user_exists(self, username: str) -> bool:
+        row = self._conn.execute(
+            "SELECT 1 FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+        return row is not None
+
+    def ensure_user(self, username: str, password: str, role: str) -> bool:
+        if self.user_exists(username):
+            return False
+        self.create_user(username, password, role)
+        return True
+
+    # ------------------------------------------------------------------
     def verify_credentials(self, username: str, password: str) -> Optional[str]:
         row = self._conn.execute(
             "SELECT password_hash, role FROM users WHERE username = ?",
