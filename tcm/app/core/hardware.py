@@ -106,6 +106,9 @@ class HardwareInterface:
             self._transistor_state[channel] = state
             self._flush_outputs()
 
+    def has_transistor_channel(self, channel: str) -> bool:
+        return channel in self._transistor_state
+
     def read_inputs(self, channels: Iterable[str]) -> Dict[str, bool]:
         with self._lock:
             return {ch: self._input_state.get(ch, False) for ch in channels}

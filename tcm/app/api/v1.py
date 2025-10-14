@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from ..core.state import GLOBAL_STATE
+from ..core.state import GLOBAL_STATE, LOGICAL_OUTPUTS
 from ..security.auth import get_authenticated_user, require_role
 from ..services.strike import StrikeService
 from .models import (
@@ -57,6 +57,11 @@ def set_output(
     user=Depends(require_role("technik")),
 ) -> dict:
     state = GLOBAL_STATE.read()
+    if payload.name not in LOGICAL_OUTPUTS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown output '{payload.name}'",
+        )
     overrides = dict(state.manual_overrides)
     overrides[payload.name] = payload.state
     GLOBAL_STATE.update(manual_overrides=overrides, manual_mode=True)
@@ -91,9 +96,22 @@ def trigger_strike(
     service: StrikeService = Depends(get_strike_service),
     user=Depends(require_role("operator")),
 ):
-    success = service.trigger(strike_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Strike not configured")
+    outcome = service.trigger(strike_id)
+    if not outcome.success:
+        if outcome.error == "not_configured":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Strike not configured",
+            )
+        if outcome.error == "transistor_unavailable":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Strike transistor unavailable",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Strike trigger failed",
+        )
     runtime = GLOBAL_STATE.read()
     return StrikeTriggerResponse(
         triggered=True, strike=strike_id, active_until=runtime.strike_active_until
