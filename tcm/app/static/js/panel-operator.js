@@ -6,6 +6,7 @@ function handleButtonClick(button) {
     }
     const label = (_a = button.getAttribute("data-strike-label")) !== null && _a !== void 0 ? _a : "STRIKE";
     button.disabled = true;
+
     fetch(endpoint, {
         method: "GET",
         credentials: "same-origin",
@@ -47,6 +48,8 @@ function handleButtonClick(button) {
                 var _a;
                 (_a = window.TCMToast) === null || _a === void 0 ? void 0 : _a.call(window, message, { type: "error", duration: 6000 });
             });
+        } else {
+          window.TCMToast(message, { type: "error", duration: 6000 });
         }
         else {
             (_a = window.TCMToast) === null || _a === void 0 ? void 0 : _a.call(window, message, { type: "error", duration: 6000 });
