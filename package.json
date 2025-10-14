@@ -4,11 +4,13 @@
   "private": true,
   "description": "Tooling for formatting frontend templates and assets.",
   "scripts": {
+    "build:ts": "tsc",
     "format": "prettier --write \"tcm/app/**/*.{css,scss,js,ts,html,jinja,j2}\"",
     "lint": "prettier --check \"tcm/app/**/*.{css,scss,js,ts,html,jinja,j2}\""
   },
   "devDependencies": {
     "prettier": "^3.3.2",
-    "prettier-plugin-jinja-template": "^2.1.0"
+    "prettier-plugin-jinja-template": "^2.1.0",
+    "typescript": "^5.9.3"
   }
 }
