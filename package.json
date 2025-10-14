@@ -4,6 +4,7 @@
   "private": true,
   "description": "Tooling for formatting frontend templates and assets.",
   "scripts": {
+    "build:ts": "tsc",
     "format": "prettier --write \"tcm/app/**/*.{css,scss,js,ts,html,jinja,j2}\"",
     "lint": "prettier --check \"tcm/app/**/*.{css,scss,js,ts,html,jinja,j2}\"",
     "build:ts": "tsc"
