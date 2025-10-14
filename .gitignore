@@ -10,3 +10,9 @@ __pycache__/
 node_modules/
 .pytest_cache/
 .mypy_cache/
+tcm/deploy/ca/root-ca/
+tcm/deploy/ca/intermediate/
+tcm/deploy/ca/clients/
+tcm/deploy/ca/output/
+tcm/deploy/ca/ca-clients.crt
+tcm/deploy/reverse-proxy/certs/

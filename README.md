@@ -27,6 +27,15 @@ W repozytorium dostępny jest również skrypt automatyzujący ręczne generowan
 python tcm/scripts/generate_secrets.py
 ```
 
+Do wygenerowania lokalnego urzędu CA oraz certyfikatów dla reverse proxy użyj jednego polecenia:
+
+```bash
+make ca
+```
+
+Polecenie utworzy artefakty w `tcm/deploy/ca/output/` oraz automatycznie umieści pliki TLS/mTLS w `tcm/deploy/reverse-proxy/certs/`,
+dzięki czemu `make prod` pobiera je podczas budowania obrazów.
+
 Skrypt utworzy klucze (`app_secret_key`, `app_fernet_key`) oraz poprosi o hasło dla konta administratora, tworząc hasz Argon2 (`admin_bootstrap_hash`). W przypadku potrzeby ręcznej generacji pojedynczych wartości można nadal użyć poleceń `python -c`:
 
 * `TCM_ADMIN_HASH=...`: `python -c "from passlib.hash import argon2; print(argon2.using(type='ID', rounds=3, memory_cost=65536, parallelism=2).hash('twoje_hasło'))"`
