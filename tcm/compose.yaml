@@ -2,6 +2,9 @@ version: "3.9"
 
 services:
   app:
+#    read_only: true
+#    security_opt:
+#      - no-new-privileges:true
     build:
       context: ..
       dockerfile: tcm/docker/app.Dockerfile
@@ -36,6 +39,13 @@ services:
       start_period: 30s
 
   reverse-proxy:
+#    read_only: true
+#    security_opt:
+#      - no-new-privileges:true
+#    ulimits:
+#      nofile: 4096
+#    user: "101:101"
+#    cap_drop: [ "ALL" ]
     build:
       context: ..
       dockerfile: tcm/docker/proxy.Dockerfile
