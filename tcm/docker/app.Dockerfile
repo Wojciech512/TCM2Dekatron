@@ -4,7 +4,8 @@ FROM python:3.11-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_HOME=/opt/tcm \
-    PIP_ROOT=/opt/python
+    PIP_ROOT=/opt/python \
+    PATH="${PIP_ROOT}/usr/local/bin:${PATH}"
 
 WORKDIR ${APP_HOME}
 
@@ -17,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt constraints.txt ./
 RUN python -m pip install --upgrade pip \
-    && python -m pip install --no-cache-dir --prefix="${PIP_ROOT}" -r requirements.txt -c constraints.txt
+    && pip install --no-cache-dir --prefix="${PIP_ROOT}" -r requirements.txt -c constraints.txt
 
 FROM python:3.11-slim AS runtime
 
