@@ -37,6 +37,7 @@ from fontTools.ttLib import TTLibError
 from fpdf import FPDF
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 from logging import config as logging_config
 from jinja2 import FileSystemBytecodeCache
 
@@ -222,6 +223,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
         tz = timezone.utc
 
     app = FastAPI(title="TCM 2.0 Controller", version="2.0.0")
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         SessionMiddleware,
