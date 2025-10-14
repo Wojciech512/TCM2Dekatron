@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "strict": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "tcm/app/static/js",
+    "rootDir": "tcm/app/static/ts",
+    "lib": ["DOM", "DOM.Iterable", "ES2019"],
+    "skipLibCheck": true
+  },
+  "include": ["tcm/app/static/ts/**/*.ts", "tcm/app/static/ts/**/*.d.ts"]
+}
