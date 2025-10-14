@@ -34,7 +34,8 @@ make ca
 ```
 
 Polecenie utworzy artefakty w `tcm/deploy/ca/output/` oraz automatycznie umieści pliki TLS/mTLS w `tcm/deploy/reverse-proxy/certs/`,
-dzięki czemu `make prod` pobiera je podczas budowania obrazów.
+dzięki czemu `make prod` pobiera je podczas budowania obrazów. Zestaw klienta mTLS ma teraz jedną paczkę `client-universal.tar.gz`
+z certyfikatem współdzielonym przez Operatora, Technika i Serwis.
 
 Skrypt utworzy klucze (`app_secret_key`, `app_fernet_key`) oraz poprosi o hasło dla konta administratora, tworząc hasz Argon2 (`admin_bootstrap_hash`). W przypadku potrzeby ręcznej generacji pojedynczych wartości można nadal użyć poleceń `python -c`:
 

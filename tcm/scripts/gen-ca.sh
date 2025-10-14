@@ -90,25 +90,24 @@ openssl x509 -req -in "${OUTPUT}/server.csr.pem" \
     -CAcreateserial -out "${OUTPUT}/server.crt.pem" -days 825 -sha384 \
     -extfile <(printf "subjectAltName=DNS:tcm.local,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth")
 
-# 4. Klienci  (zmiany: bez -clcerts, poprawne ścieżki tar)
-for role in Operator Technik Serwis; do
-  lower=$(echo "$role" | tr '[:upper:]' '[:lower:]')
-  openssl genrsa -out "${CLIENTS_DIR}/${lower}.key.pem" 4096
-  openssl req -new -key "${CLIENTS_DIR}/${lower}.key.pem" \
-      -out "${CLIENTS_DIR}/${lower}.csr.pem" \
-      -subj "/C=PL/O=TCM Users/OU=${role}/CN=${role} Client"
-  openssl x509 -req -in "${CLIENTS_DIR}/${lower}.csr.pem" \
-      -CA "${INTERMEDIATE_DIR}/intermediate.crt.pem" -CAkey "${INTERMEDIATE_DIR}/intermediate.key.pem" \
-      -CAcreateserial -out "${CLIENTS_DIR}/${lower}.crt.pem" -days 730 -sha384 \
-      -extfile <(printf "extendedKeyUsage=clientAuth\nsubjectAltName=DNS:${lower}.local")
-  cat "${CLIENTS_DIR}/${lower}.crt.pem" "${OUTPUT}/ca-chain.crt" > "${CLIENTS_DIR}/${lower}-fullchain.pem"
-  openssl pkcs12 -export -in "${CLIENTS_DIR}/${lower}-fullchain.pem" \
-      -inkey "${CLIENTS_DIR}/${lower}.key.pem" -out "${OUTPUT}/${lower}.p12" -passout pass:Test123!
-  tar -czf "${OUTPUT}/client-${lower}.tar.gz" \
-      -C "${CLIENTS_DIR}" "${lower}.key.pem" "${lower}-fullchain.pem" \
-      -C "${OUTPUT}" "${lower}.p12"
-  rm "${OUTPUT}/${lower}.p12"
-done
+# 4. Uniwersalny klient (Operator/Technik/Serwis)
+CLIENT_COMMON_NAME="TCM Universal Client"
+CLIENT_ID="universal"
+openssl genrsa -out "${CLIENTS_DIR}/${CLIENT_ID}.key.pem" 4096
+openssl req -new -key "${CLIENTS_DIR}/${CLIENT_ID}.key.pem" \
+    -out "${CLIENTS_DIR}/${CLIENT_ID}.csr.pem" \
+    -subj "/C=PL/O=TCM Users/OU=Shared/CN=${CLIENT_COMMON_NAME}"
+openssl x509 -req -in "${CLIENTS_DIR}/${CLIENT_ID}.csr.pem" \
+    -CA "${INTERMEDIATE_DIR}/intermediate.crt.pem" -CAkey "${INTERMEDIATE_DIR}/intermediate.key.pem" \
+    -CAcreateserial -out "${CLIENTS_DIR}/${CLIENT_ID}.crt.pem" -days 730 -sha384 \
+    -extfile <(printf "extendedKeyUsage=clientAuth\nsubjectAltName=DNS:${CLIENT_ID}.local")
+cat "${CLIENTS_DIR}/${CLIENT_ID}.crt.pem" "${OUTPUT}/ca-chain.crt" > "${CLIENTS_DIR}/${CLIENT_ID}-fullchain.pem"
+openssl pkcs12 -export -in "${CLIENTS_DIR}/${CLIENT_ID}-fullchain.pem" \
+    -inkey "${CLIENTS_DIR}/${CLIENT_ID}.key.pem" -out "${OUTPUT}/${CLIENT_ID}.p12" -passout pass:Test123!
+tar -czf "${OUTPUT}/client-${CLIENT_ID}.tar.gz" \
+    -C "${CLIENTS_DIR}" "${CLIENT_ID}.key.pem" "${CLIENT_ID}-fullchain.pem" \
+    -C "${OUTPUT}" "${CLIENT_ID}.p12"
+rm "${OUTPUT}/${CLIENT_ID}.p12"
 
 # 5. CRL (nowa, kompletna konfiguracja dla openssl ca)
 # wymagane pliki bazy CA
