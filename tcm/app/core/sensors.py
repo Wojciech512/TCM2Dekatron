@@ -11,10 +11,18 @@ from .state import SensorSnapshot
 
 LOGGER = logging.getLogger(__name__)
 
+_DHT_INIT_ERROR: Optional[str] = None
+
 try:  # pragma: no cover - optional hardware dependency
     import board
     import adafruit_dht
-except (ImportError, NotImplementedError):  # pragma: no cover - running without hardware
+except (ImportError, NotImplementedError, AttributeError, RuntimeError) as exc:  # pragma: no cover - running without hardware
+    # AttributeError/RuntimeError cover cases where platform detection fails within
+    # the CircuitPython stack (e.g. Blinka raising "Avoid infinite recursion" when
+    # GPIO access is unavailable inside a constrained container). Treat those as a
+    # missing sensor driver so the application can still start.
+    _DHT_INIT_ERROR = str(exc)
+    LOGGER.warning("DHT11 driver unavailable: %s", _DHT_INIT_ERROR)
     board = None
     adafruit_dht = None
 
@@ -32,7 +40,13 @@ def read_dht11(batt_pin: int, cab_pin: int) -> SensorReading:
     errors: List[str] = []
 
     if adafruit_dht is None or board is None:
-        errors.append("DHT library not available; running without sensor data")
+        if _DHT_INIT_ERROR:
+            errors.append(
+                "DHT library not available; running without sensor data"
+                f" ({_DHT_INIT_ERROR})"
+            )
+        else:
+            errors.append("DHT library not available; running without sensor data")
         return SensorReading(snapshot=snapshot, errors=errors)
 
     for label, pin in (("batt", batt_pin), ("cab", cab_pin)):
