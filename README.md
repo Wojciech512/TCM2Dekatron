@@ -1,4 +1,4 @@
-# Plan wdrożenia TCM 2.0
+# Załącznik nr 1 - Zakres prac
 
 Dokument opisuje w prosty sposób, co już zostało przygotowane oraz jakie kroki są jeszcze przed nami, aby uruchomić system TCM 2.0 od podstaw. Zestawiono to tak, by osoby nietechniczne mogły łatwo śledzić postęp.
 
