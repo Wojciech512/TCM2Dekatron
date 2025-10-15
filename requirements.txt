@@ -14,4 +14,5 @@ slowapi
 fpdf2
 aiofiles
 adafruit-circuitpython-mcp230xx==2.5.5 ; platform_system == "Linux" and (platform_machine == "armv7l" or platform_machine == "aarch64")
-Adafruit-DHT==1.4.0 ; platform_system == "Linux" and (platform_machine == "armv7l" or platform_machine == "aarch64")
+Adafruit-Blinka==8.66.2 ; platform_system == "Linux" and (platform_machine == "armv7l" or platform_machine == "aarch64")
+adafruit-circuitpython-dht==4.0.9 ; platform_system == "Linux" and (platform_machine == "armv7l" or platform_machine == "aarch64")

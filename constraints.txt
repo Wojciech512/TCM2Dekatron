@@ -15,4 +15,5 @@ pydantic-settings==2.3.4
 cryptography==42.0.8
 slowapi==0.1.9
 adafruit-circuitpython-mcp230xx==2.5.5
-Adafruit-DHT==1.4.0
+Adafruit-Blinka==8.66.2
+adafruit-circuitpython-dht==4.0.9

@@ -13,6 +13,7 @@ WORKDIR ${APP_HOME}
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libffi-dev \
+        libgpiod-dev \
         libssl-dev \
         python3-dev \
         pkg-config \
@@ -45,6 +46,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TCM_DB_DIR=/var/lib/tcm
 
 WORKDIR ${APP_HOME}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgpiod2 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system tcm && adduser --system --ingroup tcm tcm \
     && install -d -o tcm -g tcm /var/lib/tcm

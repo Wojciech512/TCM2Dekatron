@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -11,9 +12,11 @@ from .state import SensorSnapshot
 LOGGER = logging.getLogger(__name__)
 
 try:  # pragma: no cover - optional hardware dependency
-    import Adafruit_DHT  # type: ignore
-except ImportError:  # pragma: no cover
-    Adafruit_DHT = None
+    import board
+    import adafruit_dht
+except (ImportError, NotImplementedError):  # pragma: no cover - running without hardware
+    board = None
+    adafruit_dht = None
 
 
 @dataclass
@@ -28,14 +31,40 @@ def read_dht11(batt_pin: int, cab_pin: int) -> SensorReading:
     snapshot = SensorSnapshot()
     errors: List[str] = []
 
-    if Adafruit_DHT is None:
+    if adafruit_dht is None or board is None:
         errors.append("DHT library not available; running without sensor data")
         return SensorReading(snapshot=snapshot, errors=errors)
 
     for label, pin in (("batt", batt_pin), ("cab", cab_pin)):
-        humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.DHT11, pin)
+        board_pin_name = f"D{pin}"
+        if not hasattr(board, board_pin_name):
+            errors.append(f"DHT11 {label} pin D{pin} not available on this board")
+            continue
+
+        gpio = getattr(board, board_pin_name)
+        sensor = adafruit_dht.DHT11(gpio, use_pulseio=False)
+        humidity: Optional[float] = None
+        temperature: Optional[float] = None
+        last_error: Optional[str] = None
+
+        for _ in range(3):
+            try:
+                humidity = sensor.humidity
+                temperature = sensor.temperature
+            except RuntimeError as exc:  # pragma: no cover - transient hardware error
+                last_error = str(exc)
+                humidity = temperature = None
+            if humidity is not None and temperature is not None:
+                break
+            time.sleep(2.0)
+
+        sensor.exit()
+
         if humidity is None or temperature is None:
-            errors.append(f"DHT11 {label} read failed")
+            if last_error:
+                errors.append(f"DHT11 {label} read failed: {last_error}")
+            else:
+                errors.append(f"DHT11 {label} read failed")
             continue
         if label == "batt":
             snapshot.hum_batt = float(humidity)
