@@ -19,20 +19,23 @@ services:
       - ./config:/opt/tcm/tcm/config:ro
       - ../tcm/app:/opt/tcm/tcm/app:delegated
       - tcm_app_data:/var/lib/tcm
-#    devices:
-#      - /dev/spidev0.0
-#      - /dev/spidev0.1
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+      - /dev/shm:rw,noexec,nosuid,size=32m
     privileged: false
     cap_add:
       - SYS_TIME
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "1m"
+        max-file: "2"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      test: [
+        "CMD-SHELL",
+        "python -c \"import urllib.request,sys; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).status != 200)\"",
+      ]
+      interval: 60s
       timeout: 5s
       retries: 3
       start_period: 30s

@@ -99,7 +99,30 @@ function initDashboard(): void {
     }
   };
 
-  window.setInterval(refreshState, 5000);
+  const REFRESH_INTERVAL = 15000;
+  let refreshTimer: number | undefined;
+
+  const scheduleRefresh = (delay: number = REFRESH_INTERVAL) => {
+    if (refreshTimer !== undefined) {
+      window.clearTimeout(refreshTimer);
+    }
+    refreshTimer = window.setTimeout(async () => {
+      if (document.hidden) {
+        scheduleRefresh();
+        return;
+      }
+      await refreshState();
+      scheduleRefresh();
+    }, delay);
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      refreshState().finally(() => scheduleRefresh());
+    }
+  });
+
+  refreshState().finally(() => scheduleRefresh(REFRESH_INTERVAL));
 }
 
 if (document.readyState === "loading") {

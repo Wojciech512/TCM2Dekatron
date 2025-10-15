@@ -88,7 +88,7 @@ Reguły kopiują aktualne zachowanie:
 ## 9. Konteneryzacja
 * `tcm/docker/app.Dockerfile` – obraz `python:3.12-slim-bookworm`, instalacja zależności z `requirements.txt` + `constraints.txt`, użytkownik `tcm` (UID 1000), `uvicorn` jako entrypoint.
 * `tcm/docker/proxy.Dockerfile` – NGINX 1.24 alpine (multi-arch) + certyfikaty.
-* `tcm/compose.yaml` – dwie usługi (`reverse-proxy`, `app`), sieci `frontend` (TLS) i `backend`, mount `/dev/spidev*`, `gpio` przez `devices`/`tmpfs`.
+* `tcm/compose.yaml` – dwie usługi (`proxy`, `app`), sieci `frontend` (TLS) i `backend`, mount `/dev/spidev*`, `gpio` przez `devices`/`tmpfs`.
 * Healthcheck HTTP `/health` (FastAPI) i `CMD curl` w NGINX.
 * Logi do stdout + wolumen `logs/` dla SQLite.
 

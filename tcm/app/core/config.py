@@ -125,6 +125,10 @@ class LoggingConfig(BaseModel):
     export_chunk_size: int = 500
     page_size: int = 10
     max_records: int = 5000
+    flush_interval_seconds: float = 5.0
+    flush_max_records: int = 32
+    vacuum_interval_minutes: float = 30.0
+    vacuum_pages: int = 32
 
 
 class SecretRefs(BaseModel):

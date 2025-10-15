@@ -97,7 +97,7 @@ def configure_logging() -> None:
         os.getenv("UVICORN_LOG_LEVEL")
         or os.getenv("TCM_LOG_LEVEL")
         or os.getenv("LOG_LEVEL")
-        or "INFO"
+        or "WARNING"
     ).upper()
 
     logging_config.dictConfig(
@@ -189,14 +189,44 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             return fallback
         return value if value > 0 else fallback
 
+    def _float_from_env(var_name: str, fallback: float) -> float:
+        raw = os.getenv(var_name)
+        if not raw:
+            return fallback
+        try:
+            value = float(raw)
+        except ValueError:
+            return fallback
+        return value if value > 0 else fallback
+
     logs_page_size = _int_from_env("TCM_LOGS_PAGE_SIZE", config.logging.page_size)
     logs_max_records = _int_from_env("TCM_LOGS_MAX_RECORDS", config.logging.max_records)
+    logs_flush_interval = _float_from_env(
+        "TCM_LOG_FLUSH_INTERVAL",
+        config.logging.flush_interval_seconds,
+    )
+    logs_flush_max = _int_from_env(
+        "TCM_LOG_FLUSH_MAX",
+        config.logging.flush_max_records,
+    )
+    logs_vacuum_interval_seconds = _float_from_env(
+        "TCM_LOG_VACUUM_INTERVAL_MINUTES",
+        config.logging.vacuum_interval_minutes,
+    ) * 60.0
+    logs_vacuum_pages = _int_from_env(
+        "TCM_LOG_VACUUM_PAGES",
+        config.logging.vacuum_pages,
+    )
 
     event_logger = EventLogger(
         db_path,
         config.logging.encrypted_fields,
         fernet_key,
         max_records=logs_max_records,
+        flush_interval_seconds=logs_flush_interval,
+        flush_max_records=logs_flush_max,
+        vacuum_interval_seconds=logs_vacuum_interval_seconds,
+        vacuum_pages=logs_vacuum_pages,
     )
     user_store = UserStore(db_path)
     if admin_hash:
@@ -218,6 +248,7 @@ def create_app(config_path: Path | None = None) -> FastAPI:
             "Bootstrap accounts ensured",
             {"usernames": created_bootstrap_users},
         )
+        event_logger.flush()
 
     try:
         tz_name = config.metadata.timezone if config and config.metadata else None
