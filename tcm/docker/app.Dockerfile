@@ -47,9 +47,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR ${APP_HOME}
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgpiod2 \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    apt-get update; \
+    if apt-cache show libgpiod3 >/dev/null 2>&1; then \
+        apt-get install -y --no-install-recommends libgpiod3; \
+    else \
+        apt-get install -y --no-install-recommends libgpiod2; \
+    fi; \
+    rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system tcm && adduser --system --ingroup tcm tcm \
     && install -d -o tcm -g tcm /var/lib/tcm
