@@ -24,11 +24,12 @@ RUN python -m pip install --upgrade pip \
 
 FROM node:20-alpine AS assets
 
-ENV NODE_ENV=production
+# Include development dependencies (e.g. TypeScript) required for asset compilation.
+ENV NODE_ENV=development
 WORKDIR /build
 
 COPY package.json package-lock.json tsconfig.json ./
-RUN npm ci --ignore-scripts \
+RUN npm ci --ignore-scripts --include=dev \
     && npm cache clean --force
 
 COPY tcm/app/static/ts ./tcm/app/static/ts
