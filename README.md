@@ -37,19 +37,23 @@ Dokument opisuje w prosty sposób, co już zostało przygotowane oraz jakie krok
 - ✅ Określono zakres informacji (stany wejść/wyjść, logi urządzenia).
 - ⏳ Przygotowanie dashboardu ze stanami drzwi, czujników zalania i kluczowych wyjść (alarm, oświetlenie, klimatyzacja, grzałka, wentylatory).
 - ⏳ Udostępnienie podglądu logów zdarzeń z możliwością filtrowania.
+- ⏳ Zapewnienie, że dodatkowe czujniki aktywowane w panelu serwisowym automatycznie pojawią się w widoku operatora.
 
 ### Panel Technika
 - ✅ Ustalono zakres uprawnień dodatkowych (progi temperatur, ustawienia sieciowe, nazwa urządzenia).
 - ⏳ Formularze do zmiany progów temperatur, histerezy i parametrów sieciowych (IP, maska, brama, DNS).
 - ⏳ Zapewnienie walidacji danych i zapisu zmian do trwałej konfiguracji.
 - ⏳ Prezentacja potwierdzeń i komunikatów o błędach dla technika.
+- ⏳ Mechanizm aktualizacji nazwy i opisu urządzenia widocznego w pozostałych panelach.
 
 ### Panel Serwisu
 - ✅ Określono funkcje serwisowe (tryb manualny, tryb testowy, przypisanie dodatkowych wejść/wyjść).
 - ⏳ Zabezpieczenie dostępu przełącznikiem serwisowym (DIP) oraz rolą użytkownika.
 - ⏳ Interfejs do ręcznego sterowania każdym wyjściem wraz z ostrzeżeniami.
-- ⏳ Kreator dodawania kolejnych drzwi i czujników zalania oraz przypisywania wyjść tranzystorowych.
-- ⏳ Implementacja trybu testowego (konfigurowany czas trwania, interwały przełączania wyjść).
+- ⏳ Przygotowanie bazowej konfiguracji (4 drzwi, 1 czujnik zalania) oraz formularza pozwalającego aktywować kolejne wejścia, które po przypisaniu staną się widoczne dla operatora i technika.
+- ⏳ Kreator dodawania kolejnych drzwi i czujników zalania oraz przypisywania wyjść tranzystorowych, z kontrolą uniknięcia podwójnych przydziałów.
+- ⏳ Implementacja trybu testowego (konfigurowany czas trwania, interwały przełączania wyjść) uruchamiającego kolejno każde wyjście oraz raportującego postęp.
+- ⏳ Tryb manualny z przyciskami do natychmiastowego załączania/wyłączania pojedynczych wyjść i wyraźnym oznaczeniem aktywnego trybu.
 
 ## Logika działania urządzenia
 - ✅ Spisano reguły sterowania na podstawie czujników i wejść (drzwi, zalanie, temperatura).
