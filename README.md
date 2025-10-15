@@ -19,59 +19,155 @@ Dokument opisuje w prosty sposób, co już zostało przygotowane oraz jakie krok
 - ⏳ Testy komunikacji pomiędzy reverse proxy a aplikacją.
 
 ## Frontend (interfejs użytkownika)
+### Widoki i nawigacja
 - ✅ Zdefiniowano trzy główne panele: Operator, Technik, Serwis.
-- ⏳ Zaprojektowanie układu ekranów i nawigacji (dashboard, menu, widoki szczegółowe).
-- ⏳ Przygotowanie warstwy wizualnej (kolory alarmów, czytelne opisy w języku polskim).
-- ⏳ Zapewnienie automatycznego odświeżania stanów wejść/wyjść oraz wyświetlania logów.
-- ⏳ Testy użyteczności z docelowymi użytkownikami.
+- ⏳ Zaprojektowanie układu ekranów i menu nawigacyjnego (dashboard + widoki szczegółowe).
+- ⏳ Przygotowanie warstwy wizualnej (kolory alarmów, czytelne etykiety w języku polskim).
+- ⏳ Zapewnienie automatycznego odświeżania danych w panelach (stany I/O, logi, konfiguracja).
+
+### Dostępność i użyteczność
+- ⏳ Testy użyteczności z docelowymi użytkownikami (operatorzy, technicy, serwis).
+- ⏳ Przygotowanie instrukcji ekranowych i podpowiedzi, które ułatwią pracę nietechnicznym użytkownikom.
+- ⏳ Wprowadzenie spójnych ikon i oznaczeń alarmów (np. kolory, symbole ostrzegawcze).
+
+## Poziomy dostępu – przegląd funkcji
+- **Operator**: podgląd stanów wejść/wyjść, odczyt logów, brak możliwości zmiany konfiguracji.
+- **Technik**: wszystkie uprawnienia operatora + edycja progów temperatur, ustawień sieciowych oraz nazwy/opisu urządzenia.
+- **Serwis**: wszystkie uprawnienia technika + manualne sterowanie wyjściami, tryb testowy, rozszerzanie konfiguracji I/O; dostęp warunkowany przełącznikiem DIP.
 
 ## Backend (monolit aplikacyjny)
+### Warstwa logiki i danych
 - ✅ Zebrano wymagania dotyczące logiki urządzenia i dostępów użytkowników.
-- ⏳ Przygotowanie struktur danych dla stanów wejść/wyjść i historii zdarzeń.
+- ⏳ Przygotowanie struktur danych dla stanów wejść/wyjść oraz historii zdarzeń.
+- ⏳ Zaimplementowanie harmonogramów odczytu czujników i aktualizacji logiki co 0,25 s.
+- ⏳ Zarządzanie konfiguracją bazową i rozszerzoną (zapisywanie, odczyt, reset).
+
+### Warstwa komunikacji
 - ⏳ Implementacja API HTTP i integracji z bazą konfiguracji.
 - ⏳ Obsługa sesji użytkowników oraz podział ról (Operator, Technik, Serwis).
-- ⏳ Zaimplementowanie harmonogramów odczytu czujników i aktualizacji logiki co 0,25 s.
+- ⏳ Zapewnienie warstwy autoryzacji dla operacji manualnych i trybu testowego.
 
-## Widoki aplikacji
-### Panel Operatora
+## Widoki aplikacji i poziomy dostępu
+### Panel Operatora (podstawowy dostęp)
 - ✅ Określono zakres informacji (stany wejść/wyjść, logi urządzenia).
-- ⏳ Przygotowanie dashboardu ze stanami drzwi, czujników zalania i kluczowych wyjść (alarm, oświetlenie, klimatyzacja, grzałka, wentylatory).
-- ⏳ Udostępnienie podglądu logów zdarzeń z możliwością filtrowania.
-- ⏳ Zapewnienie, że dodatkowe czujniki aktywowane w panelu serwisowym automatycznie pojawią się w widoku operatora.
+- ⏳ **Monitoring wejść**
+  - Wyświetlanie statusu każdego drzwi (4 w wersji bazowej, do 6 po rozszerzeniu) wraz z opisem lokalizacji.
+  - Wskazanie statusu czujników zalania (1 w wersji bazowej, 2 po rozszerzeniu) z wyróżnieniem alarmów.
+- ⏳ **Monitoring wyjść**
+  - Widoczność kluczowych wyjść: K1 Alarm, K2 Klimatyzacja, K3 Oświetlenie, K4 Grzałka, K5 Wentylatory 230 VAC, T1 Wentylatory 48 VDC.
+  - Lista pozostałych przekaźników (K6–K8) i tranzystorów (T2–T8) z opisami zastosowań.
+- ⏳ **Logi i alarmy**
+  - Dostęp do dziennika zdarzeń (filtry po typie zdarzenia, czasie).
+  - Czytelne komunikaty alarmowe (np. „Drzwi otwarte”, „Wykryto zalanie”, „Przegrzanie”).
+- ⏳ **Automatyczne aktualizacje**
+  - Odświeżanie widoku bez konieczności ręcznego przeładowania.
+  - Automatyczne pojawianie się dodatkowych czujników po ich aktywacji w panelu serwisowym.
 
-### Panel Technika
+### Panel Technika (rozszerzony dostęp)
 - ✅ Ustalono zakres uprawnień dodatkowych (progi temperatur, ustawienia sieciowe, nazwa urządzenia).
-- ⏳ Formularze do zmiany progów temperatur, histerezy i parametrów sieciowych (IP, maska, brama, DNS).
-- ⏳ Zapewnienie walidacji danych i zapisu zmian do trwałej konfiguracji.
-- ⏳ Prezentacja potwierdzeń i komunikatów o błędach dla technika.
-- ⏳ Mechanizm aktualizacji nazwy i opisu urządzenia widocznego w pozostałych panelach.
+- ⏳ **Konfiguracja temperatur**
+  - Formularze do zmiany progów klimatyzacji (K2), grzałki (K4) i wentylacji awaryjnej (K5 + T1).
+  - Ustawianie histerezy i potwierdzenie zapisu każdej zmiany.
+- ⏳ **Ustawienia sieciowe**
+  - Edycja IP, maski, bramy, DNS z walidacją formatu i informacją o koniecznym restarcie (jeśli wymagany).
+- ⏳ **Identyfikacja urządzenia**
+  - Zmiana nazwy i opisu urządzenia prezentowanych w nagłówkach wszystkich paneli oraz w logach.
+- ⏳ **Bezpieczeństwo konfiguracji**
+  - Podgląd historii zmian ustawień (kto i kiedy modyfikował parametry).
+  - Zapewnienie, że konfiguracja jest trwała po restarcie (zapis do pamięci nieulotnej).
 
-### Panel Serwisu
+### Panel Serwisu (pełny dostęp + DIP)
 - ✅ Określono funkcje serwisowe (tryb manualny, tryb testowy, przypisanie dodatkowych wejść/wyjść).
-- ⏳ Zabezpieczenie dostępu przełącznikiem serwisowym (DIP) oraz rolą użytkownika.
-- ⏳ Interfejs do ręcznego sterowania każdym wyjściem wraz z ostrzeżeniami.
-- ⏳ Przygotowanie bazowej konfiguracji (4 drzwi, 1 czujnik zalania) oraz formularza pozwalającego aktywować kolejne wejścia, które po przypisaniu staną się widoczne dla operatora i technika.
-- ⏳ Kreator dodawania kolejnych drzwi i czujników zalania oraz przypisywania wyjść tranzystorowych, z kontrolą uniknięcia podwójnych przydziałów.
-- ⏳ Implementacja trybu testowego (konfigurowany czas trwania, interwały przełączania wyjść) uruchamiającego kolejno każde wyjście oraz raportującego postęp.
-- ⏳ Tryb manualny z przyciskami do natychmiastowego załączania/wyłączania pojedynczych wyjść i wyraźnym oznaczeniem aktywnego trybu.
+- ⏳ **Zabezpieczenie dostępu**
+  - Wymóg aktywnego przełącznika serwisowego (DIP) oraz roli „Serwis”.
+  - Automatyczne blokowanie panelu po wyłączeniu przełącznika.
+- ⏳ **Tryb manualny**
+  - Przełącznik globalny aktywujący manualne sterowanie z wyraźnym ostrzeżeniem.
+  - Lista wyjść K1–K8 i T1–T8 z przyciskami ON/OFF oraz czytelnym statusem.
+  - Logowanie każdej ręcznej operacji i możliwość szybkiego powrotu do trybu automatycznego.
+- ⏳ **Konfiguracja wejść/wyjść**
+  - Predefiniowana konfiguracja bazowa (Drzwi 1–4, Czujnik zalania 1).
+  - Aktywacja dodatkowych drzwi 5–6 i drugiego czujnika zalania poprzez kreator krok po kroku.
+  - Przypisywanie wyjść tranzystorowych do elektrozaczepów z kontrolą unikalności.
+  - Edycja opisów drzwi/czujników tak, aby były widoczne w pozostałych panelach.
+- ⏳ **Tryb testowy**
+  - Ustawianie czasu trwania testu (np. 5 h) oraz interwału przełączania (np. co 30 min).
+  - Automatyczne załączanie kolejnych wyjść w zadanej sekwencji i prezentacja postępu.
+  - Raport końcowy z wynikami testów (które wyjścia przeszły/nie przeszły).
 
 ## Logika działania urządzenia
+### Ogólne zasady
 - ✅ Spisano reguły sterowania na podstawie czujników i wejść (drzwi, zalanie, temperatura).
-- ⏳ Implementacja sterowania klimatyzacją, grzałką i wentylacją z histerezą.
-- ⏳ Obsługa alarmów: otwarcie drzwi, zalanie, przegrzanie – wraz z odpowiednimi komunikatami.
-- ⏳ Reakcja bezpieczeństwa przy braku danych z czujników (wyłączenie sterowania, alarm serwisowy).
-- ⏳ Utrzymanie dziennika zdarzeń (zapisywanie przyczyn alarmów i zmian stanów).
+- ⏳ Implementacja harmonogramu odczytu danych z czujników DS18B20 i DHT11.
+- ⏳ Zarządzanie priorytetami alarmów (drzwi > zalanie > temperatura).
+
+### Sterowanie temperaturą i wentylacją
+- ⏳ Klimatyzacja (K2):
+  - Włączenie po przekroczeniu zadanego progu temperatury.
+  - Wyłączenie po spadku poniżej progu minus histereza.
+- ⏳ Grzałka (K4):
+  - Włączenie po spadku temperatury poniżej progu zimna.
+  - Wyłączenie po osiągnięciu progu + histereza.
+- ⏳ Wentylatory awaryjne (K5 + T1):
+  - Uruchomienie po przekroczeniu progu przegrzania.
+  - Opcjonalne wyłączenie klimatyzacji podczas pracy awaryjnej (potwierdzenie z klientem).
+
+### Reakcje na zdarzenia
+- ⏳ Otwarcie dowolnych drzwi:
+  - Natychmiastowe wyłączenie klimatyzacji, wentylatorów i grzałki.
+  - Załączenie oświetlenia (K3) i alarmu (K1) z komunikatem „Drzwi otwarte”.
+- ⏳ Aktywacja czujnika zalania:
+  - Załączenie alarmu (K1) z komunikatem „Wykryto zalanie”.
+  - Pozostawienie innych wyjść w aktualnym stanie.
+- ⏳ Przekroczenie progu temperatury wentylatorów:
+  - Uruchomienie K5 i T1 oraz alarm „Przegrzanie”.
+  - Potwierdzenie decyzji o wyłączeniu klimatyzacji podczas alarmu przegrzania.
+- ⏳ Przekroczenie progów dla klimatyzacji lub grzałki:
+  - Załączenie odpowiedniego wyjścia bez alarmu.
+
+### Stany wyjątkowe i logowanie
+- ⏳ Tryb bezpieczny przy braku danych z czujników (blokada wyjść, sygnał ostrzegawczy).
+- ⏳ Ciągłe prowadzenie dziennika zdarzeń wraz z przyczynami i czasem wystąpienia.
+- ⏳ Udostępnienie logów do odczytu w panelach zgodnie z poziomami dostępu.
 
 ## Komunikacja – protokoły
-- ✅ Wybrano protokoły: HTTP (panel i API), SNMP (monitoring zewnętrzny).
-- ⏳ Przygotowanie dokumentacji API dla integratorów.
-- ⏳ Implementacja i konfiguracja agenta SNMP z odpowiednimi OID do odczytu stanów.
-- ⏳ Testy komunikacji z systemami nadrzędnymi (zapytania HTTP, odczyt SNMP).
+### HTTP (panel i API)
+- ✅ Potwierdzono, że interfejs webowy i REST API będą działały w oparciu o HTTPS.
+- ⏳ Dokumentacja endpointów (odczyt stanów I/O, sterowanie wyjściami, konfiguracja).
+- ⏳ Weryfikacja mechanizmów autoryzacji między panelami a API.
+
+### API (integracje zewnętrzne)
+- ⏳ Przygotowanie stabilnych endpointów do integracji z systemami zewnętrznymi (np. BMS).
+- ⏳ Określenie limitów i scenariuszy błędów (timeouty, komunikaty).
+- ⏳ Publikacja przykładowych zapytań i odpowiedzi dla integratorów.
+
+### SNMP (monitoring)
+- ⏳ Implementacja agenta SNMP z OID odczytującymi stany wejść, wyjść i alarmów.
+- ⏳ Konfiguracja bezpieczeństwa (community string lub SNMPv3).
+- ⏳ Testy odczytu z zewnętrznym menedżerem SNMP.
 
 ## Dostosowanie I/O (wejścia/wyjścia)
-- ✅ Sporządzono mapę sprzętową: 8 przekaźników (K1–K8), 8 tranzystorów (T1–T8), 6 wejść drzwi, 2 czujniki zalania, czujniki DS18B20 i DHT11.
-- ⏳ Przygotowanie konfiguracji bazowej (4 drzwi, 1 czujnik zalania) i maksymalnej (6 drzwi, 2 czujniki zalania).
-- ⏳ Implementacja przypisywania wyjść do drzwi (elektrozaczepy) z kontrolą unikalności.
+### Wyjścia przekaźnikowe (K1–K8)
+- ✅ Mapa funkcji: K1 Alarm, K2 Klimatyzacja, K3 Światło, K4 Grzałka, K5 Wentylatory 230 VAC, K6–K8 rezerwowe.
+- ⏳ Definicja scenariuszy sterowania dla rezerwowych kanałów (np. dodatkowe alarmy, sygnalizacje).
+
+### Wyjścia tranzystorowe (T1–T8)
+- ✅ Mapa funkcji: T1 Wentylatory 48 VDC, T2 Elektrozaczep drzwi 1, T3–T8 dostępne dla kolejnych drzwi.
+- ⏳ Konfiguracja czasów podtrzymania elektrozaczepów i zabezpieczenia przed przegrzaniem.
+
+### Wejścia cyfrowe
+- ✅ Czujniki drzwi: 6 wejść krańcówek (A0–A5) z możliwością opisania każdej pary drzwi.
+- ✅ Czujniki zalania: 2 wejścia (A6–A7) z progami detekcji zalania.
+- ⏳ Obsługa przełącznika serwisowego (DIP) umożliwiającego dostęp do panelu serwisowego.
+
+### Czujniki środowiskowe
+- ✅ DS18B20 – cyfrowy pomiar temperatury głównej szafy.
+- ✅ DHT11 – pomiar temperatury i wilgotności pomocniczej.
+- ⏳ Mechanizmy kalibracji i diagnostyki (np. test odczytu, alarm przy braku odpowiedzi czujnika).
+
+### Konfiguracje sprzętowe
+- ⏳ Przygotowanie konfiguracji bazowej (4 drzwi, 1 czujnik zalania) oraz maksymalnej (6 drzwi, 2 czujniki zalania).
+- ⏳ Kreator przypisywania wyjść do drzwi wraz z kontrolą unikalności.
 - ⏳ Kalibracja czasów działania wyjść (np. czas otwarcia drzwi, czasy testowe).
 - ⏳ Testy końcowe sprzęt + oprogramowanie (symulacja scenariuszy alarmowych i normalnych).
 
