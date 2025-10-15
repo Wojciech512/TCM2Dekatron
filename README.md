@@ -58,6 +58,7 @@ Dokument opisuje w prosty sposób, co już zostało przygotowane oraz jakie krok
   - Lista pozostałych przekaźników (K6–K8) i tranzystorów (T2–T8) z opisami zastosowań.
 - ⏳ **Logi i alarmy**
   - Dostęp do dziennika zdarzeń (filtry po typie zdarzenia, czasie).
+  - Logi przechowywane są w liście o stałej długości; po przekroczeniu limitu zdefiniowanego w zmiennej środowiskowej najstarsze wpisy są nadpisywane nowymi.
   - Czytelne komunikaty alarmowe (np. „Drzwi otwarte”, „Wykryto zalanie”, „Przegrzanie”).
 - ⏳ **Automatyczne aktualizacje**
   - Odświeżanie widoku bez konieczności ręcznego przeładowania.
