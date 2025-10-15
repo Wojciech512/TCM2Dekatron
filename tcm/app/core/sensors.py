@@ -55,8 +55,22 @@ def read_dht11(batt_pin: int, cab_pin: int) -> SensorReading:
             errors.append(f"DHT11 {label} pin D{pin} not available on this board")
             continue
 
-        gpio = getattr(board, board_pin_name)
-        sensor = adafruit_dht.DHT11(gpio, use_pulseio=False)
+        try:
+            gpio = getattr(board, board_pin_name)
+        except (AttributeError, RuntimeError) as exc:
+            errors.append(
+                f"DHT11 {label} pin D{pin} unavailable: {exc}"
+            )
+            continue
+
+        try:
+            sensor = adafruit_dht.DHT11(gpio, use_pulseio=False)
+        except (AttributeError, RuntimeError) as exc:
+            errors.append(
+                f"DHT11 {label} initialisation failed: {exc}"
+            )
+            continue
+
         humidity: Optional[float] = None
         temperature: Optional[float] = None
         last_error: Optional[str] = None
