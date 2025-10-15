@@ -208,3 +208,6 @@ Target w razie potrzeby automatycznie generuje certyfikaty (`make ca`), a nastę
 - `tcm/deploy/ca/README.md` – skrócona procedura CA i opis artefaktów.
 - `tcm/app/README.md` – struktura katalogów aplikacji.
 - `docs/migration_blueprint.md` – szczegółowy plan migracji i architektury.
+
+## Dokumentacja dodatkowa
+- [Optymalizacja aplikacji FastAPI na Raspberry Pi 3](docs/raspberry_pi_optimization.md)
