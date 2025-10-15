@@ -63,55 +63,16 @@
         <span class="chip">TCM 2.0</span>
       {% endif %}
     </footer>
-    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
-    <!-- prettier-ignore-start -->
-    <script>
-      (function(){
-        const container = document.getElementById('toast-container');
-        function makeToast(data){
-          if(!data || !container) return;
-          const toast = document.createElement('div');
-          toast.className = 'toast ' + (data.type || 'info');
-          const message = document.createElement('div');
-          message.textContent = data.message || '';
-          toast.appendChild(message);
-          const close = document.createElement('button');
-          close.type = 'button';
-          close.setAttribute('aria-label', 'Zamknij powiadomienie');
-          close.textContent = 'X';
-          close.addEventListener('click', function(ev){
-            ev.preventDefault();
-            hideToast(toast);
-          });
-          toast.appendChild(close);
-          container.appendChild(toast);
-          requestAnimationFrame(function(){ toast.classList.add('show'); });
-          const timeout = typeof data.duration === 'number' ? data.duration : 4000;
-          if(timeout > 0){
-            setTimeout(function(){ hideToast(toast); }, timeout);
-          }
-          return toast;
-        }
-        function hideToast(toast){
-          toast.classList.remove('show');
-          toast.addEventListener('transitionend', function(){
-            toast.remove();
-          }, { once: true });
-        }
-        window.TCMToast = function(message, options){
-          const data = typeof message === 'string' ? { message: message } : (message || {});
-          if(typeof message === 'string' && options){
-            Object.assign(data, options);
-          }
-          return makeToast(data);
-        };
-        const initial = {{ toast | default(None) | tojson }};
-        if(initial){
-          makeToast(initial);
-        }
-      })();
-    </script>
-    <!-- prettier-ignore-end -->
+    <div
+      id="toast-container"
+      class="toast-container"
+      aria-live="polite"
+      aria-atomic="true"
+      {% if toast %}
+        data-initial-toast="{{ toast | tojson | forceescape }}"
+      {% endif %}
+    ></div>
+    <script type="module" src="{{ url_for('static', path='js/toast.js') }}"></script>
     {% block scripts %}
     {% endblock %}
   </body>

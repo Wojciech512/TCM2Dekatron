@@ -19,6 +19,16 @@ COPY requirements.txt constraints.txt ./
 RUN python -m pip install --upgrade pip \
     && python -m pip install --no-cache-dir --prefix="/opt/python" -r requirements.txt -c constraints.txt
 
+FROM node:20-alpine AS assets
+
+WORKDIR /build
+
+COPY package.json package-lock.json tsconfig.json ./
+RUN npm ci
+
+COPY tcm/app/static/ts ./tcm/app/static/ts
+RUN npm run build:ts
+
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -35,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /opt/python/ /usr/local/
 COPY tcm/ ./tcm/
+COPY --from=assets /build/tcm/app/static/js ./tcm/app/static/js
 COPY tcm/docker/start.sh ./docker/start.sh
 
 RUN addgroup --system tcm && adduser --system --ingroup tcm tcm \

@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "lib": ["DOM", "ES2018"],
+    "strict": true,
+    "noEmitOnError": false,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "sourceMap": false,
+    "rootDir": "tcm/app/static/ts",
+    "outDir": "tcm/app/static/js",
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["tcm/app/static/ts/**/*"]
+}

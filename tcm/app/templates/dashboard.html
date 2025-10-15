@@ -6,6 +6,12 @@
   {% set outputs = state.outputs %}
   {% set door_channels = config.inputs.door_channels %}
   {% set flood_channels = config.inputs.flood_channels %}
+  <div
+    id="dashboard-config"
+    data-refresh-url="{{ request.url_for('get_state') }}"
+    data-door-channels="{{ door_channels | tojson | forceescape }}"
+    hidden
+  ></div>
   <div class="section">
     <h2>Dane czujników</h2>
     <div class="kpis">
@@ -144,57 +150,5 @@
 
 {% block scripts %}
   {{ super() }}
-  {# prettier-ignore-start #}
-  <script>
-    async function refreshState(){
-      try{
-        const response = await fetch("{{ request.url_for('get_state') }}", {cache: 'no-store'});
-        if(!response.ok){
-          return;
-        }
-        const data = await response.json();
-        if(data.inputs){
-          Object.entries(data.inputs).forEach(([channel, value]) => {
-            const el = document.querySelector(`[data-input="${channel}"]`);
-            if(!el){
-              return;
-            }
-            const isDoor = {{ door_channels|tojson }}.includes(channel);
-            if(isDoor){
-              el.textContent = value ? 'OPEN' : 'CLOSED';
-              el.classList.toggle('bad', !!value);
-              el.classList.toggle('ok', !value);
-            }else{
-              el.textContent = value ? 'FLOOD' : 'OK';
-              el.classList.toggle('bad', !!value);
-              el.classList.toggle('ok', !value);
-            }
-          });
-        }
-        if(data.outputs){
-          Object.entries(data.outputs).forEach(([name, active]) => {
-            const el = document.querySelector(`[data-output="${name}"]`);
-            if(!el){
-              return;
-            }
-            el.textContent = active ? 'ON' : 'OFF';
-            el.classList.toggle('on', !!active);
-            el.classList.toggle('off', !active);
-          });
-        }
-        if(data.sensors){
-          Object.entries(data.sensors).forEach(([name, value]) => {
-            const el = document.querySelector(`[data-sensor="${name}"]`);
-            if(el){
-              el.textContent = (value === null || value === undefined) ? '—' : value;
-            }
-          });
-        }
-      }catch(e){
-        // ignore transient errors
-      }
-    }
-    setInterval(refreshState, 5000);
-  </script>
-  {# prettier-ignore-end #}
+  <script type="module" src="{{ url_for('static', path='js/dashboard.js') }}"></script>
 {% endblock %}
